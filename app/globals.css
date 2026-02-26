@@ -1,0 +1,230 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════
+   JLSTUDIOS WEB AUTOMATOR — DESIGN SYSTEM v2.0
+   Tailwind CSS v4 — CSS-First Configuration
+   ═══════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ─── Paleta de la Agencia ─── */
+  --color-studio-bg: #09090b;
+  --color-studio-surface: #18181b;
+  --color-studio-border: #27272a;
+  --color-studio-accent: #6d28d9;
+  --color-studio-accent-hover: #7c3aed;
+  --color-studio-text: #fafafa;
+  --color-studio-muted: #a1a1aa;
+
+  /* ─── Tipografías ─── */
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Cal Sans", "Inter", sans-serif;
+
+  /* ─── Animaciones ─── */
+  --animate-fade-in: fadeIn 0.5s ease-out;
+  --animate-slide-up: slideUp 0.5s ease-out;
+  --animate-shimmer: shimmer 2s infinite linear;
+
+  /* ─── Keyframes ─── */
+  @keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  @keyframes slideUp {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UTILIDADES PERSONALIZADAS (@utility — Tailwind v4 syntax)
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── Panel de cristal (glassmorphism) ─── */
+@utility glass-panel {
+  background-color: color-mix(in srgb, #18181b 80%, transparent);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid #27272a;
+  border-radius: 0.75rem;
+}
+
+/* ─── Campo de input ─── */
+@utility input-field {
+  width: 100%;
+  background-color: #18181b;
+  border: 1px solid #3f3f46;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #f4f4f5;
+
+  &::placeholder {
+    color: #52525b;
+  }
+
+  &:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: color-mix(in srgb, #8b5cf6 50%, transparent);
+    border-color: #8b5cf6;
+  }
+
+  transition-property: all;
+  transition-duration: 200ms;
+}
+
+/* ─── Botón primario (violeta) ─── */
+@utility btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px color-mix(in srgb, #7c3aed 30%, transparent);
+
+  &:hover {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px color-mix(in srgb, #7c3aed 40%, transparent);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+/* ─── Botón secundario (zinc) ─── */
+@utility btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #d4d4d8;
+  background-color: #27272a;
+  border: 1px solid #3f3f46;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #3f3f46;
+    color: #fafafa;
+    border-color: #52525b;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* ─── Etiqueta de campo (label) ─── */
+@utility label-text {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+/* ─── Skeleton shimmer para loading states ─── */
+@utility shimmer-bg {
+  background: linear-gradient(
+    90deg,
+    #27272a 0%,
+    #3f3f46 40%,
+    #27272a 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 0.25rem;
+}
+
+/* ─── Scrollbar personalizada (webkit) ─── */
+@utility custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #3f3f46 transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #3f3f46;
+    border-radius: 2px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: #52525b;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ESTILOS BASE GLOBALES
+   ═══════════════════════════════════════════════════════════ */
+
+html {
+  background-color: #09090b;
+  color: #fafafa;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: #09090b;
+  min-height: 100vh;
+}
+
+/* Select element override para el tema oscuro */
+select.input-field {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2352525b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+/* Textarea override */
+textarea.input-field {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Focus visible global para accesibilidad */
+:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
