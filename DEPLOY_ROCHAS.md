@@ -1,134 +1,135 @@
-# Deploy — Rocha's Rotisería CMS
+# Guia de deploy — Rocha's Rotiseria
 
-Pasos para pasar de mock a producción real.
-
----
-
-## 1. Supabase
-
-### Crear proyecto
-1. Ir a [supabase.com](https://supabase.com) → New Project
-2. Nombre: `jlstudios-cms` | Región: South America (São Paulo)
-3. Guardar la contraseña de la DB
-
-### Ejecutar el schema
-En **SQL Editor** del dashboard de Supabase, pegar y ejecutar el contenido de `supabase-schema.sql`.
-
-Esto crea las tablas `clients`, `schedules`, `menu_items`, `why_cards` con los datos reales de Rocha's ya insertados.
-
-### Variables de entorno
-Crear `.env.local` en la raíz del proyecto:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
-SUPABASE_SERVICE_ROLE_KEY=<service-role-key>   # solo en server-side
-```
-
-Obtener los valores en: Supabase Dashboard → Settings → API.
-
-### Instalar cliente
-```bash
-npm install @supabase/supabase-js
-```
-
-### Reemplazar el mock login
-En `app/page.tsx`, reemplazar `CREDENTIALS` con:
-```ts
-import { createClient } from "@supabase/supabase-js";
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-
-// En handleLogin:
-const { data, error } = await supabase
-  .from("clients")
-  .select("*")
-  .eq("username", username)
-  .single();
-// Verificar password con bcrypt en una API route (nunca en el cliente)
-```
-
-### Reemplazar MOCK_AUTH_DB
-En `app/dashboard/DashboardLayout.jsx`, reemplazar la lectura de `localStorage` con una llamada a Supabase Auth o una API route que devuelva la sesión.
-
-### Reemplazar datos del menú
-En `app/dashboard/ContentManager.jsx`, reemplazar `initialItems` con:
-```ts
-const { data } = await supabase
-  .from("menu_items")
-  .select("*")
-  .eq("client_id", session.id)
-  .order("sort_order");
-```
+Esta guia es para cuando el cliente te pague y quieras dejar todo funcionando en produccion. Por ahora el CMS funciona con datos de prueba (mock). Cuando llegue el momento, seguis estos pasos en orden.
 
 ---
 
-## 2. Cloudflare Pages
+## Tu situacion actual (DEMO)
 
-### Instalar adaptador
-```bash
-npm install -D @cloudflare/next-on-pages
+- El CMS corre localmente o en Gitpod
+- Los datos estan hardcodeados en el codigo (no hay base de datos real todavia)
+- La pagina del local (repo Comida) es un HTML estatico en GitHub
+- No hay dominio comprado todavia
+- No hay deploy en Cloudflare Pages todavia
+
+**Esto esta bien.** Podes mostrarle el CMS al cliente como demo sin necesidad de nada de lo de abajo.
+
+---
+
+## Cuando el cliente te pague: pasos en orden
+
+### PASO 1 — Crear la base de datos en Supabase (gratis)
+
+1. Entra a https://supabase.com y crea una cuenta (es gratis)
+2. Haz clic en **New Project**
+3. Nombre: `jlstudios-cms` | Region: **South America (Sao Paulo)** | guarda la contrasena
+4. Espera 2 minutos a que se cree el proyecto
+5. En el menu de la izquierda, haz clic en **SQL Editor**
+6. Copia todo el contenido del archivo `supabase-schema.sql` de este repo y pegalo ahi
+7. Haz clic en **Run** (boton verde)
+8. Si dice "Success", listo. Las tablas y los datos de Rocha's ya estan cargados
+
+> Si ya ejecutaste el SQL antes y te tira error de "duplicate key", no pasa nada.
+> El script usa ON CONFLICT DO NOTHING — podes ejecutarlo multiples veces sin problema.
+
+---
+
+### PASO 2 — Subir el CMS a Cloudflare Pages (gratis)
+
+Cloudflare Pages es donde va a vivir el panel de control (el CMS).
+
+1. Entra a https://cloudflare.com y crea una cuenta (es gratis)
+2. Dashboard de Cloudflare → **Workers & Pages** → **Create application** → **Pages** → **Connect to Git**
+3. Conecta tu cuenta de GitHub y selecciona el repo `dashboard-jlstudios`
+4. Configuracion del build:
+   - Framework preset: **Next.js**
+   - Build command: `npm run build`
+   - Output directory: `.next`
+5. Haz clic en **Save and Deploy**
+6. Cloudflare te da una URL tipo `dashboard-jlstudios.pages.dev` — esa es la URL del CMS
+
+---
+
+### PASO 3 — Subir la pagina del local a Cloudflare Pages
+
+La pagina de Rocha's (el HTML estatico del repo `Comida`) tambien va en Cloudflare Pages, como proyecto separado.
+
+1. En Cloudflare Pages, crea otra aplicacion
+2. Conecta el repo `Comida` de GitHub
+3. Framework preset: **None** (es HTML estatico)
+4. Build command: (dejarlo vacio)
+5. Output directory: `/`
+6. Deploy → te da una URL tipo `rochas-comida.pages.dev`
+
+---
+
+### PASO 4 — Comprar el dominio en Spaceship
+
+1. Entra a https://spaceship.com
+2. Busca el dominio que quiera el cliente (ej: `rochasrotiseria.com`)
+3. Compralo (cuesta aprox USD 10-15 por ano)
+4. En el panel de Spaceship, busca **DNS / Nameservers**
+5. Cambia los nameservers a los de Cloudflare (Cloudflare te los da cuando agregas el dominio)
+
+---
+
+### PASO 5 — Conectar el dominio
+
+En Cloudflare:
+1. Agrega el dominio en **Websites** → **Add a site**
+2. Sigue los pasos para verificar que sos el dueno
+3. En la pagina del local (repo Comida), anda a **Custom domains** y agrega `rochasrotiseria.com`
+4. Para el CMS, usa un subdominio: `cms.rochasrotiseria.com`
+
+El SSL (candado verde) lo activa Cloudflare automaticamente.
+
+---
+
+### PASO 6 — Conectar el CMS con la base de datos
+
+Este es el unico paso tecnico que requiere tocar codigo. Cuando llegue el momento, avisame y lo hacemos juntos. En resumen:
+
+1. En Supabase → **Settings → API**, copiar:
+   - Project URL (algo como `https://abcdef.supabase.co`)
+   - anon public key (una clave larga)
+2. En Cloudflare Pages, en la configuracion del CMS, agregar esas dos variables de entorno
+3. Cambiar el codigo del CMS para que lea de Supabase en lugar de los datos hardcodeados
+
+---
+
+## Resumen visual
+
+```
+AHORA (demo):
+  Tu compu / Gitpod → CMS con datos mock → mostras al cliente
+
+CUANDO TE PAGUEN:
+  GitHub (codigo) → Cloudflare Pages → CMS en cms.rochasrotiseria.com
+  GitHub (codigo) → Cloudflare Pages → Pagina en rochasrotiseria.com
+  Supabase (base de datos) ← el CMS lee y escribe aca
+  Spaceship (dominio) → apunta a Cloudflare
 ```
 
-Agregar a `package.json`:
-```json
-"scripts": {
-  "pages:build": "npx @cloudflare/next-on-pages"
-}
-```
+---
 
-### Conectar repositorio
-1. Cloudflare Dashboard → Pages → Create application → Connect to Git
-2. Seleccionar `dashboard-jlstudios`
-3. Framework preset: **Next.js**
-4. Build command: `npm run pages:build`
-5. Output directory: `.vercel/output/static`
+## Costos estimados
 
-### Variables de entorno en CF Pages
-En CF Pages → Settings → Environment variables, agregar:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-
-### Dominio personalizado
-1. CF Pages → Custom domains → Add domain
-2. Ingresar el dominio comprado en Spaceship (ej: `cms.rochasrotiseria.com`)
-3. Seguir las instrucciones de DNS (agregar CNAME en Spaceship apuntando a `<project>.pages.dev`)
+| Servicio            | Costo                              |
+|---------------------|------------------------------------|
+| Supabase            | Gratis (hasta 500MB)               |
+| Cloudflare Pages    | Gratis (hasta 500 deploys/mes)     |
+| Dominio .com        | ~USD 10-15 por ano (en Spaceship)  |
+| Total primer ano    | ~USD 10-15                         |
 
 ---
 
-## 3. Dominio en Spaceship
+## Preguntas frecuentes
 
-1. Comprar dominio en [spaceship.com](https://spaceship.com)
-2. En DNS Management, agregar:
-   - `CNAME @ <project>.pages.dev` — para la página del local
-   - `CNAME cms <cms-project>.pages.dev` — para el CMS (subdominio)
-3. Activar Cloudflare como nameserver para aprovechar SSL automático y CDN
+**El cliente puede editar el menu sin saber programar?**
+Si. Una vez conectado Supabase, cuando el cliente hace clic en "Guardar" en el CMS, los cambios se guardan en la base de datos y la pagina se actualiza.
 
----
+**Necesito saber de servidores?**
+No. Cloudflare Pages y Supabase son servicios gestionados. Vos solo subis el codigo.
 
-## 4. Imágenes — migrar de GitHub a Supabase Storage
-
-Las fotos del menú actualmente apuntan a `raw.githubusercontent.com`. En producción:
-
-1. Crear bucket en Supabase Storage: `client-media` (público)
-2. Subir las imágenes desde el panel de Supabase o via API
-3. Actualizar las URLs en la tabla `menu_items`:
-   ```sql
-   UPDATE menu_items
-   SET image_url = replace(image_url, 'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/', 'https://<project-ref>.supabase.co/storage/v1/object/public/client-media/')
-   WHERE client_id = (SELECT id FROM clients WHERE username = 'rochas');
-   ```
-4. En el CMS, el campo "URL de la foto" en cada producto ya acepta URLs de Supabase Storage
-
----
-
-## 5. Checklist final antes de entregar al cliente
-
-- [ ] Schema SQL ejecutado en Supabase
-- [ ] Variables de entorno configuradas en CF Pages
-- [ ] Login con Supabase Auth funcionando
-- [ ] Imágenes migradas a Supabase Storage
-- [ ] Dominio .com apuntando al sitio del local
-- [ ] Subdominio `cms.` apuntando al panel
-- [ ] SSL activo en ambos dominios (Cloudflare lo gestiona automáticamente)
-- [ ] Contraseña de `rochas` cambiada a una segura (bcrypt en DB)
+**Puedo usar el mismo CMS para otros clientes?**
+Si. El CMS ya esta preparado para multiples clientes. Cada uno tiene su usuario y contrasena, y solo ve sus propios datos.
