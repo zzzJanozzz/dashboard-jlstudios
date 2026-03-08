@@ -246,7 +246,7 @@ function ItemModal({ item, schema, accent, onSave, onClose }) {
       <div className="absolute inset-0 bg-black/75 backdrop-blur-md" onClick={onClose} />
       <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
         style={{ animation: "fadeIn .2s ease forwards" }}>
-        <div className="absolute top-0 left-0 right-0 h-[2px]"
+        <div className="absolute top-0 left-0 right-0 h-0.5"
           style={{ background: `linear-gradient(90deg, ${accent}, ${accent}77, ${accent})` }} />
 
         {/* Header */}
@@ -326,8 +326,8 @@ function ItemRow({ item, schema, accent, onEdit, onDelete, onToggleActive }) {
           <div className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-lg shrink-0">{item.emoji}</div>
           <div>
             <p className="text-slate-200 font-semibold text-sm">{item.nombre}</p>
-            {item.desc && <p className="text-slate-600 text-xs mt-0.5 truncate max-w-[200px]">{item.desc}</p>}
-          </div>
+          
+          </div>  {item.desc && <p className="text-slate-600 text-xs mt-0.5 truncate max-w-50">{item.desc}</p>}
         </div>
       </td>
       <td className="px-4 py-3.5">

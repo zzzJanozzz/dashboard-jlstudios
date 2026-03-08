@@ -177,7 +177,7 @@ function Sidebar({ collapsed, setCollapsed, activePage, setActivePage, session }
       style={{ width: collapsed ? 72 : 260 }}
     >
       {/* Top accent */}
-      <div className="absolute top-0 left-0 right-0 h-[2px]"
+      <div className="absolute top-0 left-0 right-0 h-0.5"
         style={{ background: `linear-gradient(90deg, ${accent}, ${accent}99, ${accent})` }} />
 
       {/* Logo */}
