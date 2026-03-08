@@ -16,7 +16,7 @@
 
 // Se agregó useEffect aquí:
 import { useState, createContext, useContext, useEffect } from "react";
-import { Home, ClipboardList, Images, Settings, ChevronLeft, LogOut, Globe, Zap, Shield } from "lucide-react";
+import { Home, ClipboardList, Images, Settings, ChevronLeft, LogOut, Globe, Zap, Shield, Store } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AUTH CONTEXT — shared across all dashboard components
@@ -153,23 +153,73 @@ export const MOCK_AUTH_DB = {
     cdn:      { status: "inactive",provider: "Cloudflare", cacheHit: "0%" },
     lastPublish: "2025-01-30T11:00:00Z",
   },
+
+  // ── CLIENTE REAL: Rocha's Rotisería ──────────────────────────────────────
+  rochas: {
+    username:     "rochas",
+    passwordHash: "rochas2026",
+    businessName: "Rocha's Rotisería",
+    emoji:        "🍖",
+    domain:       "rochasrotiseria.com",
+    niche:        "gastronomia",
+    plan:         "profesional",
+    accentColor:  "#ea580c",
+    emailContact: "rochasrotiseria@gmail.com",
+    phone:        "+54 9 3546 48-8351",
+    address:      "Calle 3 755 (entre 14 y 16)",
+    city:         "Santa Rosa de Calamuchita, Córdoba",
+    instagram:    "@rochasrotiseria",
+    facebook:     "",
+    whatsapp:     "543546488351",
+    googleMaps:   "https://maps.app.goo.gl/QmARWF93kgw1FR8C9",
+    googleMapsEmbed: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3384.8261485789093!2d-64.5370502!3d-32.0825436!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95d2bb4b13c80831%3A0x5e3f200d15bd900d!2sRocha's%20rotiseria!5e0!3m2!1ses!2sar!4v1709567490000",
+    hero: {
+      badge:            "Santa Rosa de Calamuchita · Córdoba",
+      title:            "El sabor de casa,",
+      titleHighlight:   "listo para llevar.",
+      subtitle:         "Comida casera, abundante y a precios justos. Hacé tu pedido por WhatsApp y pasá a buscarlo en Calle 3 755.",
+    },
+    rating: {
+      score:      "9.2",
+      quote:      "La mejor relación calidad–precio de la zona",
+      quoteBody:  "Porciones generosas, precios justos y el sabor de la comida de siempre. Por eso nuestros clientes vuelven.",
+    },
+    schedule: {
+      lun: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
+      mar: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
+      mié: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
+      jue: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
+      vie: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
+      sáb: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
+      dom: { t1: { open: "",      close: "",       active: false }, t2: { open: "",      close: "",       active: false }, closed: true  },
+    },
+    ssl:      { status: "active",  issuer: "Cloudflare", expiresAt: "2027-01-01" },
+    cdn:      { status: "active",  provider: "Cloudflare", cacheHit: "94%" },
+    lastPublish: "2025-03-01T10:00:00Z",
+  },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NAV ITEMS — static, labels don't change per-niche
 // ─────────────────────────────────────────────────────────────────────────────
-const NAV = [
+const NAV_BASE = [
   { id: "inicio",   label: "Inicio",         icon: Home },
   { id: "content",  label: "Mi Catálogo",    icon: ClipboardList },
   { id: "fotos",    label: "Fotos",          icon: Images },
   { id: "config",   label: "Configuración",  icon: Settings },
 ];
 
+// Tab extra solo para el cliente Rocha's
+const NAV_ROCHAS_EXTRA = { id: "negocio", label: "Mi Negocio", icon: Store };
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SIDEBAR
 // ─────────────────────────────────────────────────────────────────────────────
 function Sidebar({ collapsed, setCollapsed, activePage, setActivePage, session }) {
   const accent = session?.accentColor ?? "#f59e0b";
+  const NAV = session?.username === "rochas"
+    ? [...NAV_BASE.slice(0, 2), NAV_ROCHAS_EXTRA, ...NAV_BASE.slice(2)]
+    : NAV_BASE;
 
   return (
     <aside
@@ -296,10 +346,11 @@ function Sidebar({ collapsed, setCollapsed, activePage, setActivePage, session }
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN LAYOUT
 // ─────────────────────────────────────────────────────────────────────────────
-import DashboardHome   from "./DashboardHome";
-import ContentManager  from "./ContentManager";
-import MediaGallery    from "./MediaGallery";
-import SettingsPanel   from "./SettingsPanel";
+import DashboardHome          from "./DashboardHome";
+import ContentManager         from "./ContentManager";
+import MediaGallery           from "./MediaGallery";
+import SettingsPanel          from "./SettingsPanel";
+import RochasBusinessEditor   from "./RochasBusinessEditor";
 
 export default function DashboardLayout() {
   const [collapsed,  setCollapsed]  = useState(false);
@@ -337,6 +388,7 @@ export default function DashboardLayout() {
     content: <ContentManager session={userSession} />,
     fotos:   <MediaGallery   session={userSession} />,
     config:  <SettingsPanel  session={userSession} />,
+    negocio: <RochasBusinessEditor session={userSession} />,
   };
 
   return (

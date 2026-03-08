@@ -29,21 +29,26 @@ export default function Home() {
     setTimeout(() => setIsLoginVisible(false), 300);
   };
 
-  // --- LÓGICA DE LOGIN MODIFICADA ---
   const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
-    // Lista de usuarios válidos para las pruebas (simulando base de datos)
-    const validUsers = ["pepe123", "juan321", "maria456", "carlos789"];
-    
-    // Todos usan la clave "admin" para las pruebas (se cambiará luego)
-    if (validUsers.includes(username) && password === "admin") {
-        setError(false);
-        // Esto le dice al navegador quién entró para que el Dashboard lo lea
-        localStorage.setItem("JL_LOGGED_USER", username);
-        router.push('/dashboard');
+
+    // Credenciales válidas: usuario → contraseña
+    // TODO: reemplazar con Supabase Auth:
+    //   const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const CREDENTIALS: Record<string, string> = {
+      pepe123:   "admin",
+      juan321:   "admin",
+      maria456:  "admin",
+      carlos789: "admin",
+      rochas:    "rochas2026",
+    };
+
+    if (CREDENTIALS[username] === password) {
+      setError(false);
+      localStorage.setItem("JL_LOGGED_USER", username);
+      router.push('/dashboard');
     } else {
-        setError(true);
+      setError(true);
     }
   };
 

@@ -6,11 +6,12 @@
  * — there is no UI to change it. Each client only ever sees their own schema.
  *
  * TODO: Replace MOCK_ITEMS with real DB reads:
- *   - Supabase: const { data } = await supabase.from('items').select('*').eq('client_id', session.id)
- *   - Prisma:   const items = await prisma.item.findMany({ where: { clientId: session.id } })
+ *   - Supabase: const { data } = await supabase.from('menu_items').select('*').eq('client_id', session.id)
+ *   - Prisma:   const items = await prisma.menuItem.findMany({ where: { clientId: session.id } })
  */
 
 import { useState } from "react";
+import { ROCHAS_DATA } from "../../src/lib/rochas-data";
 import {
   Plus, Trash2, Edit3, Globe, CheckCircle, ChevronDown, Tag,
   Clock, User, Truck, Sparkles, Wrench, UtensilsCrossed, Dumbbell,
@@ -34,20 +35,21 @@ export const NICHE_SCHEMAS = {
     priceField:    "precio",
     fields: [
       { key: "nombre",    label: "Nombre del plato",   type: "text",     required: true,  placeholder: "Ej: Pizza Margarita" },
-      { key: "categoria", label: "Categoría",          type: "select",   required: true,  options: ["Entradas", "Pizzas", "Pastas", "Carnes", "Postres", "Bebidas", "Combos"] },
-      { key: "precio",    label: "Precio",             type: "price",    required: true,  placeholder: "0.00",  mono: true },
+      { key: "categoria", label: "Categoría",          type: "select",   required: true,  options: ["Lomitos", "Hamburguesas", "Milanesas", "Pizzas", "Bebidas", "Entradas", "Postres", "Combos"] },
+      { key: "precio",    label: "Precio ($)",         type: "price",    required: true,  placeholder: "0.00",  mono: true },
       { key: "desc",      label: "Descripción",        type: "textarea", required: false, placeholder: "Ingredientes, alérgenos, etc." },
-      { key: "delivery",  label: "Disponible en delivery", type: "toggle", required: false },
+      { key: "imageUrl",  label: "URL de la foto",     type: "text",     required: false, placeholder: "https://... (Supabase Storage o GitHub raw)" },
       { key: "destacado", label: "Plato destacado (badge en la web)", type: "toggle", required: false },
       { key: "disponible",label: "Disponible hoy",    type: "toggle",   required: false },
     ],
-    extraColumns: ["categoria", "delivery"],
+    extraColumns: ["categoria"],
+    // Items genéricos de demo (se usan para otros clientes de nicho gastronomia)
     mockItems: [
-      { id: 1, nombre: "Pizza Margarita", categoria: "Pizzas",   precio: "8500",  desc: "Tomate artesanal, mozzarella fresca, albahaca.", delivery: true,  destacado: true,  disponible: true,  emoji: "🍕", activo: true  },
-      { id: 2, nombre: "Empanada de Carne", categoria: "Entradas", precio: "1800", desc: "Masa a mano, carne a cuchillo, aceitunas.",     delivery: true,  destacado: false, disponible: true,  emoji: "🥟", activo: true  },
-      { id: 3, nombre: "Tiramisú Casero",  categoria: "Postres",  precio: "4200",  desc: "Mascarpone importado, bizcochuelo de amaretto.", delivery: false, destacado: false, disponible: false, emoji: "🍰", activo: false },
-      { id: 4, nombre: "Limonada Natural", categoria: "Bebidas",  precio: "2100",  desc: "Exprimida al momento, menta fresca.",            delivery: true,  destacado: false, disponible: true,  emoji: "🍋", activo: true  },
-      { id: 5, nombre: "Combo Familiar",   categoria: "Combos",   precio: "18900", desc: "2 pizzas grandes + 1.5L de bebida.",             delivery: true,  destacado: true,  disponible: true,  emoji: "🎉", activo: true  },
+      { id: 1, nombre: "Pizza Margarita",   categoria: "Pizzas",   precio: "8500",  desc: "Tomate artesanal, mozzarella fresca, albahaca.", imageUrl: "", destacado: true,  disponible: true,  emoji: "🍕", activo: true  },
+      { id: 2, nombre: "Empanada de Carne", categoria: "Entradas", precio: "1800",  desc: "Masa a mano, carne a cuchillo, aceitunas.",      imageUrl: "", destacado: false, disponible: true,  emoji: "🥟", activo: true  },
+      { id: 3, nombre: "Tiramisú Casero",   categoria: "Postres",  precio: "4200",  desc: "Mascarpone importado, bizcochuelo de amaretto.", imageUrl: "", destacado: false, disponible: false, emoji: "🍰", activo: false },
+      { id: 4, nombre: "Limonada Natural",  categoria: "Bebidas",  precio: "2100",  desc: "Exprimida al momento, menta fresca.",            imageUrl: "", destacado: false, disponible: true,  emoji: "🍋", activo: true  },
+      { id: 5, nombre: "Combo Familiar",    categoria: "Combos",   precio: "18900", desc: "2 pizzas grandes + 1.5L de bebida.",             imageUrl: "", destacado: true,  disponible: true,  emoji: "🎉", activo: true  },
     ],
   },
 
@@ -323,7 +325,20 @@ function ItemRow({ item, schema, accent, onEdit, onDelete, onToggleActive }) {
     <tr className="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors group">
       <td className="px-4 py-3.5">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-lg shrink-0">{item.emoji}</div>
+          {item.imageUrl ? (
+            <img
+              src={item.imageUrl}
+              alt={item.nombre}
+              className="w-10 h-10 rounded-lg object-cover shrink-0 border border-slate-700"
+              onError={e => { e.currentTarget.style.display = "none"; e.currentTarget.nextSibling.style.display = "flex"; }}
+            />
+          ) : null}
+          <div
+            className="w-10 h-10 rounded-lg bg-slate-800 items-center justify-center text-lg shrink-0"
+            style={{ display: item.imageUrl ? "none" : "flex" }}
+          >
+            {item.emoji}
+          </div>
           <div>
             <p className="text-slate-200 font-semibold text-sm">{item.nombre}</p>
             {item.desc && <p className="text-slate-600 text-xs mt-0.5 truncate max-w-[200px]">{item.desc}</p>}
@@ -383,7 +398,17 @@ export default function ContentManager({ session }) {
   const SchemaIcon = schema.Icon;
   const accent = session.accentColor;
 
-  const [items,       setItems]       = useState(schema.mockItems);
+  // Use real Rocha's data when logged in as 'rochas'; fall back to generic mock for other clients
+  // TODO: replace with Supabase fetch: supabase.from('menu_items').select('*').eq('client_id', session.id)
+  const initialItems = session.username === "rochas"
+    ? ROCHAS_DATA.menuItems.map(item => ({
+        ...item,
+        precio: item.precio,
+        activo: item.activo,
+      }))
+    : schema.mockItems;
+
+  const [items,       setItems]       = useState(initialItems);
   const [filterCat,   setFilterCat]   = useState("Todos");
   const [editingItem, setEditingItem] = useState(null);
   const [publishing,  setPublishing]  = useState(false);

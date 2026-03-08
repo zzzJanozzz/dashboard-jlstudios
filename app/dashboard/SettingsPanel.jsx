@@ -172,6 +172,12 @@ export default function SettingsPanel({ session }) {
   const [notifVisitAlert,  setNotifVisitAlert]  = useState(false);
   const [notifWA,          setNotifWA]          = useState(true);
 
+  // ── HERO ──
+  const [heroBadge,          setHeroBadge]          = useState(session.hero?.badge          ?? "");
+  const [heroTitle,          setHeroTitle]          = useState(session.hero?.title          ?? "");
+  const [heroTitleHighlight, setHeroTitleHighlight] = useState(session.hero?.titleHighlight ?? "");
+  const [heroSubtitle,       setHeroSubtitle]       = useState(session.hero?.subtitle       ?? "");
+
   // ── BUSINESS DATA ──
   const [phone,        setPhone]        = useState(session.phone ?? "");
   const [whatsapp,     setWhatsapp]     = useState(session.whatsapp ?? "");
@@ -179,11 +185,30 @@ export default function SettingsPanel({ session }) {
   const [facebook,     setFacebook]     = useState(session.facebook ?? "");
   const [googleMaps,   setGoogleMaps]   = useState(session.googleMaps ?? "");
   const [address,      setAddress]      = useState(session.address ?? "");
+  const [city,         setCity]         = useState(session.city ?? "");
 
   // ── SCHEDULE ──
   const [schedule, setSchedule] = useState(session.schedule ?? {});
-  const setDayField = (day, field, value) => {
-    setSchedule(prev => ({ ...prev, [day]: { ...prev[day], [field]: value } }));
+
+  // Update a field inside a specific turno (t1 or t2) or the top-level closed flag
+  const setDayField = (day, turno, field, value) => {
+    setSchedule(prev => {
+      const current = prev[day] ?? {
+        t1: { open: "09:00", close: "18:00", active: true  },
+        t2: { open: "",      close: "",       active: false },
+        closed: false,
+      };
+      if (turno === "closed") {
+        return { ...prev, [day]: { ...current, closed: value } };
+      }
+      return {
+        ...prev,
+        [day]: {
+          ...current,
+          [turno]: { ...current[turno], [field]: value },
+        },
+      };
+    });
   };
 
   // ── MAINTENANCE ──
@@ -230,7 +255,8 @@ export default function SettingsPanel({ session }) {
         clientId:    session.username,
         emailContact: notifEmail,
         notifications: { gmail: notifGmail, weekly: notifWeekly, visitAlert: notifVisitAlert, whatsapp: notifWA },
-        phone, whatsapp, instagram, facebook, googleMaps, address,
+        hero: { badge: heroBadge, title: heroTitle, titleHighlight: heroTitleHighlight, subtitle: heroSubtitle },
+        phone, whatsapp, instagram, facebook, googleMaps, address, city,
         schedule,
         maintenance,
       };
@@ -318,7 +344,24 @@ export default function SettingsPanel({ session }) {
           </div>
         </div>
 
-        {/* ── 2. NOTIFICATIONS ── */}
+        {/* ── 2. HERO ── */}
+        <SectionCard title="Portada del Sitio (Hero)" subtitle="El texto principal que ven tus clientes al entrar" icon={Zap} accent={accent}>
+          <FormInput label="Badge / Ubicación" value={heroBadge} onChange={setHeroBadge}
+            placeholder="Santa Rosa de Calamuchita · Córdoba" icon={MapPin}
+            hint="Aparece arriba del título principal." />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormInput label="Título (línea 1)" value={heroTitle} onChange={setHeroTitle}
+              placeholder="El sabor de casa," icon={Globe} />
+            <FormInput label="Título destacado (línea 2)" value={heroTitleHighlight} onChange={setHeroTitleHighlight}
+              placeholder="listo para llevar." icon={Globe}
+              hint="Esta línea aparece con el color de tu marca." />
+          </div>
+          <FormInput label="Subtítulo / Descripción" value={heroSubtitle} onChange={setHeroSubtitle}
+            placeholder="Comida casera, abundante y a precios justos..." icon={Globe}
+            hint="Frase corta debajo del título. Máximo 2 líneas." />
+        </SectionCard>
+
+        {/* ── 3. NOTIFICATIONS ── */}
         <SectionCard title="Notificaciones" subtitle="Configurá a qué correo llegan los avisos" icon={Bell} accent="#60a5fa">
           <FormInput
             label="Email para recibir notificaciones"
@@ -344,7 +387,7 @@ export default function SettingsPanel({ session }) {
           )}
         </SectionCard>
 
-        {/* ── 3. CONTACT & SOCIAL DATA ── */}
+        {/* ── 4. CONTACT & SOCIAL DATA ── */}
         <SectionCard title="Datos de Contacto y Redes" subtitle="Aparecen en tu sitio web y en la sección de contacto" icon={Globe} accent={accent}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormInput label="Teléfono de contacto" value={phone} onChange={setPhone}
@@ -375,44 +418,102 @@ export default function SettingsPanel({ session }) {
             error={errors.googleMaps}
             hint="El botón 'Cómo llegar' en tu sitio usará este enlace."
           />
-          <FormInput label="Dirección física" value={address} onChange={setAddress}
-            placeholder="Av. Colón 1234, Córdoba" icon={MapPin} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormInput label="Dirección física" value={address} onChange={setAddress}
+              placeholder="Calle 3 755 (entre 14 y 16)" icon={MapPin} />
+            <FormInput label="Ciudad / Localidad" value={city} onChange={setCity}
+              placeholder="Santa Rosa de Calamuchita, Córdoba" icon={MapPin} />
+          </div>
         </SectionCard>
 
-        {/* ── 4. SCHEDULE ── */}
-        <SectionCard title="Horarios de Atención" subtitle="Se muestran en el footer y la sección de contacto" icon={Clock} accent={accent}>
-          <div className="space-y-2">
+        {/* ── 5. SCHEDULE ── */}
+        <SectionCard title="Horarios de Atención" subtitle="Cada día puede tener hasta dos turnos (ej: mediodía y noche)" icon={Clock} accent={accent}>
+          <div className="space-y-3">
             {DAYS.map(day => {
-              const d = schedule[day] ?? { open: "09:00", close: "18:00", closed: false };
+              const d = schedule[day] ?? {
+                t1: { open: "09:00", close: "18:00", active: true  },
+                t2: { open: "",      close: "",       active: false },
+                closed: false,
+              };
               return (
-                <div key={day} className="flex items-center gap-3 flex-wrap">
-                  <div className="w-24 shrink-0">
-                    <span className={`text-sm font-semibold ${d.closed ? "text-slate-600 line-through" : "text-slate-300"}`}>
+                <div key={day} className="rounded-xl border border-slate-800 bg-slate-800/30 p-3">
+                  {/* Day header */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-sm font-bold w-24 ${d.closed ? "text-slate-600 line-through" : "text-slate-200"}`}>
                       {DAY_LABELS[day]}
                     </span>
+                    <div className="flex items-center gap-2">
+                      <Toggle checked={!d.closed} onChange={v => setDayField(day, "closed", "closed", !v)} color={accent} />
+                      <span className="text-xs text-slate-500">{d.closed ? "Cerrado" : "Abierto"}</span>
+                    </div>
                   </div>
-                  {d.closed ? (
-                    <span className="text-slate-600 text-sm italic flex-1">Cerrado</span>
-                  ) : (
-                    <div className="flex items-center gap-2 flex-1">
-                      <input type="time" value={d.open} onChange={e => setDayField(day, "open", e.target.value)}
-                        className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all" />
-                      <span className="text-slate-600 text-sm">—</span>
-                      <input type="time" value={d.close} onChange={e => setDayField(day, "close", e.target.value)}
-                        className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all" />
+
+                  {!d.closed && (
+                    <div className="space-y-2 pl-1">
+                      {/* Turno 1 */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-slate-500 w-16 shrink-0">Turno 1</span>
+                        <input
+                          type="time"
+                          value={d.t1?.open ?? ""}
+                          onChange={e => setDayField(day, "t1", "open", e.target.value)}
+                          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all"
+                        />
+                        <span className="text-slate-600 text-sm">—</span>
+                        <input
+                          type="time"
+                          value={d.t1?.close ?? ""}
+                          onChange={e => setDayField(day, "t1", "close", e.target.value)}
+                          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all"
+                        />
+                      </div>
+
+                      {/* Turno 2 */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-slate-500 w-16 shrink-0">Turno 2</span>
+                        {d.t2?.active ? (
+                          <>
+                            <input
+                              type="time"
+                              value={d.t2?.open ?? ""}
+                              onChange={e => setDayField(day, "t2", "open", e.target.value)}
+                              className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all"
+                            />
+                            <span className="text-slate-600 text-sm">—</span>
+                            <input
+                              type="time"
+                              value={d.t2?.close ?? ""}
+                              onChange={e => setDayField(day, "t2", "close", e.target.value)}
+                              className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setDayField(day, "t2", "active", false)}
+                              className="text-xs text-slate-600 hover:text-rose-400 transition-colors ml-1"
+                            >
+                              Quitar
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setDayField(day, "t2", "active", true)}
+                            className="text-xs px-3 py-1 rounded-full border border-dashed border-slate-700 text-slate-500 hover:border-amber-500/50 hover:text-amber-400 transition-all"
+                            style={{ borderColor: `${accent}44` }}
+                          >
+                            + Agregar segundo turno
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Toggle checked={!d.closed} onChange={v => setDayField(day, "closed", !v)} color={accent} />
-                    <span className="text-slate-600 text-xs">{d.closed ? "Cerrado" : "Abierto"}</span>
-                  </div>
                 </div>
               );
             })}
           </div>
         </SectionCard>
 
-        {/* ── 5. DOMAIN & SECURITY (Cloudflare) ── */}
+        {/* ── 6. DOMAIN & SECURITY (Cloudflare) ── */}
         <SectionCard
           title="Dominio y Seguridad"
           subtitle="Estado técnico de tu sitio web · Cloudflare"
@@ -488,7 +589,7 @@ export default function SettingsPanel({ session }) {
           </div>
         </SectionCard>
 
-        {/* ── 6. PLAN ── */}
+        {/* ── 7. PLAN ── */}
         <SectionCard title="Plan Activo" subtitle="Tu suscripción con JL Studios" icon={Server} accent="#4ade80">
           <div className="flex items-center justify-between">
             <div>
