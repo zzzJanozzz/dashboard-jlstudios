@@ -182,8 +182,26 @@ export default function SettingsPanel({ session }) {
 
   // ── SCHEDULE ──
   const [schedule, setSchedule] = useState(session.schedule ?? {});
-  const setDayField = (day, field, value) => {
-    setSchedule(prev => ({ ...prev, [day]: { ...prev[day], [field]: value } }));
+
+  // Update a field inside a specific turno (t1 or t2) or the top-level closed flag
+  const setDayField = (day, turno, field, value) => {
+    setSchedule(prev => {
+      const current = prev[day] ?? {
+        t1: { open: "09:00", close: "18:00", active: true  },
+        t2: { open: "",      close: "",       active: false },
+        closed: false,
+      };
+      if (turno === "closed") {
+        return { ...prev, [day]: { ...current, closed: value } };
+      }
+      return {
+        ...prev,
+        [day]: {
+          ...current,
+          [turno]: { ...current[turno], [field]: value },
+        },
+      };
+    });
   };
 
   // ── MAINTENANCE ──
@@ -380,32 +398,86 @@ export default function SettingsPanel({ session }) {
         </SectionCard>
 
         {/* ── 4. SCHEDULE ── */}
-        <SectionCard title="Horarios de Atención" subtitle="Se muestran en el footer y la sección de contacto" icon={Clock} accent={accent}>
-          <div className="space-y-2">
+        <SectionCard title="Horarios de Atención" subtitle="Cada día puede tener hasta dos turnos (ej: mediodía y noche)" icon={Clock} accent={accent}>
+          <div className="space-y-3">
             {DAYS.map(day => {
-              const d = schedule[day] ?? { open: "09:00", close: "18:00", closed: false };
+              const d = schedule[day] ?? {
+                t1: { open: "09:00", close: "18:00", active: true  },
+                t2: { open: "",      close: "",       active: false },
+                closed: false,
+              };
               return (
-                <div key={day} className="flex items-center gap-3 flex-wrap">
-                  <div className="w-24 shrink-0">
-                    <span className={`text-sm font-semibold ${d.closed ? "text-slate-600 line-through" : "text-slate-300"}`}>
+                <div key={day} className="rounded-xl border border-slate-800 bg-slate-800/30 p-3">
+                  {/* Day header */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-sm font-bold w-24 ${d.closed ? "text-slate-600 line-through" : "text-slate-200"}`}>
                       {DAY_LABELS[day]}
                     </span>
+                    <div className="flex items-center gap-2">
+                      <Toggle checked={!d.closed} onChange={v => setDayField(day, "closed", "closed", !v)} color={accent} />
+                      <span className="text-xs text-slate-500">{d.closed ? "Cerrado" : "Abierto"}</span>
+                    </div>
                   </div>
-                  {d.closed ? (
-                    <span className="text-slate-600 text-sm italic flex-1">Cerrado</span>
-                  ) : (
-                    <div className="flex items-center gap-2 flex-1">
-                      <input type="time" value={d.open} onChange={e => setDayField(day, "open", e.target.value)}
-                        className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all" />
-                      <span className="text-slate-600 text-sm">—</span>
-                      <input type="time" value={d.close} onChange={e => setDayField(day, "close", e.target.value)}
-                        className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all" />
+
+                  {!d.closed && (
+                    <div className="space-y-2 pl-1">
+                      {/* Turno 1 */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-slate-500 w-16 shrink-0">Turno 1</span>
+                        <input
+                          type="time"
+                          value={d.t1?.open ?? ""}
+                          onChange={e => setDayField(day, "t1", "open", e.target.value)}
+                          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all"
+                        />
+                        <span className="text-slate-600 text-sm">—</span>
+                        <input
+                          type="time"
+                          value={d.t1?.close ?? ""}
+                          onChange={e => setDayField(day, "t1", "close", e.target.value)}
+                          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all"
+                        />
+                      </div>
+
+                      {/* Turno 2 */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-slate-500 w-16 shrink-0">Turno 2</span>
+                        {d.t2?.active ? (
+                          <>
+                            <input
+                              type="time"
+                              value={d.t2?.open ?? ""}
+                              onChange={e => setDayField(day, "t2", "open", e.target.value)}
+                              className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all"
+                            />
+                            <span className="text-slate-600 text-sm">—</span>
+                            <input
+                              type="time"
+                              value={d.t2?.close ?? ""}
+                              onChange={e => setDayField(day, "t2", "close", e.target.value)}
+                              className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setDayField(day, "t2", "active", false)}
+                              className="text-xs text-slate-600 hover:text-rose-400 transition-colors ml-1"
+                            >
+                              Quitar
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setDayField(day, "t2", "active", true)}
+                            className="text-xs px-3 py-1 rounded-full border border-dashed border-slate-700 text-slate-500 hover:border-amber-500/50 hover:text-amber-400 transition-all"
+                            style={{ borderColor: `${accent}44` }}
+                          >
+                            + Agregar segundo turno
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Toggle checked={!d.closed} onChange={v => setDayField(day, "closed", !v)} color={accent} />
-                    <span className="text-slate-600 text-xs">{d.closed ? "Cerrado" : "Abierto"}</span>
-                  </div>
                 </div>
               );
             })}
