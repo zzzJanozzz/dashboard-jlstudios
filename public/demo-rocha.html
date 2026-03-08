@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Rocha's Rotisería · Comida casera, abundante y a precios justos.</title>
+  <meta name="description" content="Comida casera, abundante y sabrosa en Santa Rosa de Calamuchita. Pedí por WhatsApp."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --c-bg:#0e0a07;--c-surface:#1a1108;--c-card:#1f1509;
+      --c-border:rgba(255,255,255,0.07);
+      --c-orange:#ea580c;--c-orange-l:#fb923c;--c-amber:#d97706;
+      --c-cream:#fef3c7;--c-text:#faf5eb;--c-muted:#a3956f;
+      --ff-head:'Syne',sans-serif;--ff-body:'DM Sans',sans-serif;
+      --radius:14px;
+    }
+    html{scroll-behavior:smooth}
+    body{background:var(--c-bg);color:var(--c-text);font-family:var(--ff-body);font-size:16px;line-height:1.6;overflow-x:hidden}
+    img{display:block;max-width:100%}
+    a{text-decoration:none;color:inherit}
+    .reveal{opacity:0;transform:translateY(28px);transition:opacity 0.65s ease,transform 0.65s ease}
+    .reveal.visible{opacity:1;transform:none}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 5%;height:64px;background:rgba(14,10,7,0.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--c-border);transition:background 0.3s}
+    .nav-logo{font-family:var(--ff-head);font-size:1.25rem;font-weight:800;color:var(--c-cream);letter-spacing:-0.02em}
+    .nav-links{display:flex;align-items:center;gap:28px}
+    .nav-links a{font-size:0.82rem;font-weight:500;color:var(--c-muted);transition:color 0.2s;letter-spacing:0.04em;text-transform:uppercase}
+    .nav-links a:hover{color:var(--c-cream)}
+    .nav-wa{display:inline-flex;align-items:center;gap:7px;background:var(--c-orange);color:#fff;font-size:0.78rem;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;padding:8px 18px;border-radius:100px;transition:background 0.2s,transform 0.15s,box-shadow 0.2s}
+    .nav-wa:hover{filter:brightness(0.85);transform:translateY(-1px)}
+    .hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:80px 5% 60px}
+    .hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 70% 40%,rgba(234,88,12,0.18) 0%,transparent 70%),radial-gradient(ellipse 40% 60% at 20% 70%,rgba(217,119,6,0.12) 0%,transparent 70%),var(--c-bg)}
+    .hero-bg::after{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");opacity:0.35;pointer-events:none}
+    .hero-content{position:relative;z-index:2;max-width:760px;text-align:center}
+    .hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(234,88,12,0.12);border:1px solid rgba(234,88,12,0.3);border-radius:100px;padding:6px 16px;font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--c-orange-l);margin-bottom:28px;animation:fadeUp 0.7s ease both}
+    .hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--c-orange-l);animation:pulse 2s ease infinite}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(1.4)}}
+    .hero-title{font-family:var(--ff-head);font-size:clamp(2.8rem,8vw,5.5rem);font-weight:800;line-height:1.0;letter-spacing:-0.03em;color:var(--c-text);margin-bottom:22px;animation:fadeUp 0.7s 0.1s ease both}
+    .hero-title span{color:transparent;-webkit-text-stroke:2px var(--c-orange)}
+    .hero-sub{font-size:clamp(1rem,2.5vw,1.2rem);color:var(--c-muted);line-height:1.7;max-width:560px;margin:0 auto 40px;animation:fadeUp 0.7s 0.2s ease both}
+    .hero-actions{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;animation:fadeUp 0.7s 0.3s ease both}
+    .btn-primary{display:inline-flex;align-items:center;gap:9px;background:var(--c-orange);color:#fff;font-family:var(--ff-body);font-size:0.9rem;font-weight:600;padding:14px 30px;border-radius:100px;border:none;cursor:pointer;transition:background 0.2s,transform 0.15s,box-shadow 0.2s;box-shadow:0 4px 24px rgba(234,88,12,0.35)}
+    .btn-primary:hover{filter:brightness(0.85);transform:translateY(-2px)}
+    .btn-secondary{display:inline-flex;align-items:center;gap:9px;background:transparent;color:var(--c-text);font-family:var(--ff-body);font-size:0.9rem;font-weight:600;padding:14px 30px;border-radius:100px;border:1.5px solid var(--c-border);cursor:pointer;transition:border-color 0.2s,background 0.2s,transform 0.15s}
+    .btn-secondary:hover{border-color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.04);transform:translateY(-2px)}
+    .hero-stats{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:56px;animation:fadeUp 0.7s 0.4s ease both}
+    .hero-stat{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid var(--c-border);border-radius:100px;padding:10px 20px}
+    .hero-stat-icon{font-size:1.1rem}
+    .hero-stat-text{font-size:0.82rem;color:var(--c-muted)}
+    .hero-stat-num{font-family:var(--ff-head);font-size:1rem;font-weight:700;color:var(--c-cream);margin-right:4px}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+    section{padding:96px 5%}
+    .section-label{font-size:0.7rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--c-orange);display:flex;align-items:center;gap:8px;margin-bottom:12px}
+    .section-label::before{content:'';flex:0 0 24px;height:1px;background:var(--c-orange)}
+    .section-title{font-family:var(--ff-head);font-size:clamp(1.9rem,5vw,3rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;color:var(--c-text);margin-bottom:16px}
+    .section-sub{font-size:1rem;color:var(--c-muted);max-width:500px;line-height:1.7}
+    .menu-section{background:var(--c-surface)}
+    .menu-header{max-width:600px;margin-bottom:52px}
+    .menu-filters{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:40px;justify-content:flex-start}
+    .filter-btn{padding:10px 20px;background:transparent;border:1.5px solid var(--c-border);border-radius:100px;color:var(--c-muted);font-size:0.85rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.22s ease}
+    .filter-btn:hover{border-color:var(--c-orange);color:var(--c-orange)}
+    .filter-btn.active{background:var(--c-orange);border-color:var(--c-orange);color:#fff}
+    .menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+    .menu-card{background:var(--c-card);border:1px solid var(--c-border);border-radius:var(--radius);overflow:hidden;transition:transform 0.22s ease,box-shadow 0.22s ease,border-color 0.22s;cursor:default}
+    .menu-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(234,88,12,0.2);border-color:rgba(234,88,12,0.3)}
+    .menu-card-img{width:100%;aspect-ratio:16/9;overflow:hidden;background:linear-gradient(135deg,#1f1509,#1a1108);display:flex;align-items:center;justify-content:center;font-size:3rem}
+    .menu-card-img img{width:100%;height:100%;object-fit:cover;transition:transform 0.4s ease}
+    .menu-card:hover .menu-card-img img{transform:scale(1.05)}
+    .menu-card-body{padding:18px 20px 22px}
+    .menu-card-cat{font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--c-orange);display:block;margin-bottom:6px}
+    .menu-card-name{font-family:var(--ff-head);font-size:1.05rem;font-weight:700;color:var(--c-cream);line-height:1.3;margin-bottom:8px}
+    .menu-card-desc{font-size:0.82rem;color:var(--c-muted);line-height:1.55;margin-bottom:14px}
+    .menu-card-price{display:inline-block;font-family:var(--ff-head);font-size:1.1rem;font-weight:700;color:var(--c-amber)}
+    .menu-card-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}
+    .qty-control{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:3px 6px}
+    .qty-btn{width:26px;height:26px;border-radius:50%;border:none;background:rgba(255,255,255,0.08);color:var(--c-text);font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s,transform 0.1s;line-height:1}
+    .qty-btn:hover{background:var(--c-orange);transform:scale(1.1)}
+    .qty-num{min-width:20px;text-align:center;font-family:var(--ff-head);font-size:0.95rem;font-weight:700;color:var(--c-cream)}
+    .cart-fab{position:fixed;bottom:92px;right:24px;z-index:51;width:52px;height:52px;border-radius:50%;background:var(--c-orange);color:#fff;border:none;font-size:1.4rem;cursor:pointer;box-shadow:0 4px 20px rgba(234,88,12,0.5);transition:transform 0.2s,box-shadow 0.2s;display:flex;align-items:center;justify-content:center}
+    .cart-fab:hover{transform:scale(1.08);box-shadow:0 6px 28px rgba(234,88,12,0.65)}
+    .cart-badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:0.62rem;font-weight:700;min-width:18px;height:18px;border-radius:100px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--c-bg);opacity:0;transform:scale(0);transition:opacity 0.2s,transform 0.2s}
+    .cart-badge.show{opacity:1;transform:scale(1)}
+    .cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:60;opacity:0;pointer-events:none;transition:opacity 0.3s;backdrop-filter:blur(4px)}
+    .cart-overlay.open{opacity:1;pointer-events:all}
+    .cart-panel{position:fixed;bottom:0;left:0;right:0;z-index:61;background:var(--c-surface);border-top:1px solid var(--c-border);border-radius:24px 24px 0 0;padding:24px 24px 32px;max-height:70vh;overflow-y:auto;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1)}
+    .cart-panel.open{transform:translateY(0)}
+    .cart-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .cart-panel-head h3{font-family:var(--ff-head);font-size:1.1rem;font-weight:700;color:var(--c-cream)}
+    .cart-close{background:rgba(255,255,255,0.07);border:none;color:var(--c-muted);font-size:1.2rem;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s}
+    .cart-close:hover{background:rgba(255,255,255,0.12);color:var(--c-text)}
+    .cart-empty{text-align:center;color:var(--c-muted);font-size:0.9rem;padding:28px 0}
+    .cart-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--c-border)}
+    .cart-item-name{font-size:0.88rem;color:var(--c-text);flex:1}
+    .cart-item-qty{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:2px 6px}
+    .cart-item-qty button{width:22px;height:22px;border-radius:50%;border:none;background:rgba(255,255,255,0.08);color:var(--c-text);font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;transition:background 0.15s}
+    .cart-item-qty button:hover{background:var(--c-orange)}
+    .cart-item-qty span{min-width:18px;text-align:center;font-family:var(--ff-head);font-size:0.88rem;font-weight:700;color:var(--c-cream)}
+    .cart-name-input{width:100%;margin-top:18px;padding:12px 16px;background:rgba(255,255,255,0.05);border:1px solid var(--c-border);border-radius:12px;color:var(--c-text);font-family:var(--ff-body);font-size:0.9rem;outline:none;transition:border-color 0.2s}
+    .cart-name-input:focus{border-color:var(--c-orange)}
+    .cart-name-input::placeholder{color:var(--c-muted)}
+    .cart-send-btn{width:100%;margin-top:14px;padding:14px;background:var(--c-orange);color:#fff;border:none;border-radius:12px;font-family:var(--ff-head);font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:filter 0.2s,transform 0.15s}
+    .cart-send-btn:hover{filter:brightness(0.88);transform:translateY(-1px)}
+    .terms-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:70;opacity:0;pointer-events:none;transition:opacity 0.3s;backdrop-filter:blur(4px)}
+    .terms-overlay.open{opacity:1;pointer-events:all}
+    .terms-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.95);z-index:71;background:var(--c-surface);border:1px solid var(--c-border);border-radius:16px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity 0.3s,transform 0.3s}
+    .terms-modal.open{opacity:1;pointer-events:all;transform:translate(-50%,-50%) scale(1)}
+    .terms-modal-head{display:flex;align-items:center;justify-content:space-between;padding:24px;border-bottom:1px solid var(--c-border);position:sticky;top:0;background:var(--c-surface);z-index:1}
+    .terms-modal-head h2{font-family:var(--ff-head);font-size:1.3rem;font-weight:700;color:var(--c-cream);margin:0}
+    .terms-close{background:transparent;border:none;color:var(--c-muted);font-size:1.4rem;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color 0.15s}
+    .terms-close:hover{color:var(--c-text)}
+    .terms-modal-body{padding:24px;color:var(--c-text);font-size:0.9rem;line-height:1.7}
+    .terms-modal-body h3{font-family:var(--ff-head);font-size:1.05rem;font-weight:700;color:var(--c-cream);margin-top:20px;margin-bottom:10px}
+    .terms-modal-body h3:first-child{margin-top:0}
+    .terms-modal-body p{margin:0 0 12px;color:var(--c-muted)}
+    .menu-wa-cta{margin-top:44px;text-align:center}
+    .rating-strip{background:linear-gradient(135deg,#ea580ccc,#ea580c);padding:40px 5%;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:24px}
+    .rating-big{font-family:var(--ff-head);font-size:4.5rem;font-weight:800;color:#fff;line-height:1;letter-spacing:-0.04em}
+    .rating-stars{color:#fed7aa;font-size:1.3rem;letter-spacing:2px;margin-top:4px}
+    .rating-sub{font-size:0.8rem;color:rgba(255,255,255,0.65);margin-top:4px}
+    .why-section{background:var(--c-bg);position:relative;overflow:hidden}
+    .why-section::before{content:'';position:absolute;top:-120px;right:-80px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(234,88,12,0.06) 0%,transparent 70%);pointer-events:none}
+    .why-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:24px;margin-top:52px}
+    .why-card{padding:32px 28px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius);transition:border-color 0.2s,transform 0.2s}
+    .why-card:hover{border-color:rgba(234,88,12,0.25);transform:translateY(-2px)}
+    .why-icon{width:52px;height:52px;border-radius:14px;background:rgba(234,88,12,0.1);border:1px solid rgba(234,88,12,0.2);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:20px}
+    .why-card h3{font-family:var(--ff-head);font-size:1rem;font-weight:700;color:var(--c-cream);margin-bottom:8px}
+    .why-card p{font-size:0.84rem;color:var(--c-muted);line-height:1.6}
+    .contact-section{background:var(--c-surface)}
+    .contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:52px}
+    .contact-card{background:var(--c-card);border:1px solid var(--c-border);border-radius:var(--radius);padding:32px 36px}
+    .contact-card-map{background:var(--c-card);border:1px solid var(--c-border);border-radius:var(--radius);padding:32px 36px}
+    .contact-card h3,.contact-card-map h3{font-family:var(--ff-head);font-size:1.1rem;font-weight:700;color:var(--c-cream);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+    .contact-icon{width:36px;height:36px;border-radius:10px;background:rgba(234,88,12,0.1);display:flex;align-items:center;justify-content:center;font-size:1rem}
+    .schedule-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--c-border);font-size:0.88rem}
+    .schedule-row:last-child{border-bottom:none}
+    .schedule-day{font-weight:600;color:var(--c-text)}
+    .schedule-hours{color:var(--c-muted)}
+    .schedule-row--closed .schedule-day,.schedule-row--closed .schedule-hours{color:#52525b}
+    .address-line{display:flex;align-items:flex-start;gap:12px;font-size:0.9rem;color:var(--c-muted);line-height:1.6;margin-bottom:14px}
+    .address-line-icon{font-size:1.1rem;margin-top:2px;flex-shrink:0}
+    .map-link{display:inline-flex;align-items:center;gap:8px;margin-top:20px;background:var(--c-orange);color:#fff;font-size:0.82rem;font-weight:600;padding:10px 20px;border-radius:100px;transition:filter 0.2s,transform 0.15s}
+    .map-link:hover{filter:brightness(0.85);transform:translateY(-1px)}
+    footer{background:var(--c-bg);border-top:1px solid var(--c-border);padding:56px 5% 32px}
+    .footer-top{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:40px;margin-bottom:48px}
+    .footer-brand p{font-size:0.84rem;color:var(--c-muted);max-width:260px;line-height:1.7;margin-top:12px}
+    .footer-col h4{font-family:var(--ff-head);font-size:0.78rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--c-muted);margin-bottom:16px}
+    .footer-col a{display:block;font-size:0.84rem;color:var(--c-muted);margin-bottom:10px;transition:color 0.2s}
+    .footer-col a:hover{color:var(--c-cream)}
+    .footer-social{display:flex;gap:12px;margin-top:20px}
+    .social-btn{width:38px;height:38px;border-radius:10px;background:var(--c-surface);border:1px solid var(--c-border);display:flex;align-items:center;justify-content:center;font-size:1rem;transition:border-color 0.2s,background 0.2s,transform 0.15s}
+    .social-btn:hover{border-color:rgba(234,88,12,0.4);background:rgba(234,88,12,0.08);transform:translateY(-2px)}
+    .footer-bottom{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-top:24px;border-top:1px solid var(--c-border)}
+    .footer-bottom p,.footer-credit{font-size:0.78rem;color:#52525b}
+    .footer-credit a{color:var(--c-orange);transition:color 0.2s}
+    .footer-credit a:hover{color:var(--c-orange-l)}
+    .wa-float{position:fixed;bottom:24px;right:24px;z-index:50;width:56px;height:56px;border-radius:50%;background:#25d366;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.6rem;box-shadow:0 4px 24px rgba(37,211,102,0.45);transition:transform 0.2s,box-shadow 0.2s;animation:waBounce 3s 2s ease infinite}
+    .wa-float:hover{transform:scale(1.1);box-shadow:0 6px 32px rgba(37,211,102,0.6)}
+    @keyframes waBounce{0%,90%,100%{transform:scale(1)}93%{transform:scale(1.1)}96%{transform:scale(0.95)}}
+    @media(max-width:768px){.nav-links{display:none}section{padding:72px 5%}.contact-grid{grid-template-columns:1fr}.hero-title{font-size:clamp(2.2rem,10vw,3.5rem)}.rating-strip{justify-content:center;text-align:center}}
+    @media(max-width:480px){.hero-actions{flex-direction:column;align-items:stretch}.btn-primary,.btn-secondary{justify-content:center}}
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="#" aria-label="Inicio"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/F16D639C-021B-4C75-A02F-0A04206DD1B5.png" alt="Rocha's Rotisería" style="height:61px;width:auto;max-width:200px;object-fit:contain;display:block;"/></a>
+  <div class="nav-links">
+    <a href="#menu">Menú</a>
+    <a href="#nosotros">Nosotros</a>
+    <a href="#ubicacion">Ubicación</a>
+  </div>
+  <a href="https://wa.me/543546488351?text=Hola%2C%20quiero%20hacer%20un%20pedido" class="nav-wa" target="_blank" rel="noopener">📲 Pedir ahora</a>
+</nav>
+
+<section class="hero" id="inicio">
+  <div class="hero-bg"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/images%20(1).jpg" alt="portada" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.18;mix-blend-mode:luminosity;pointer-events:none;"/></div>
+  <div class="hero-content">
+    <div class="hero-badge"><span class="hero-badge-dot"></span>Santa Rosa de Calamuchita · Córdoba</div>
+    <h1 class="hero-title">El sabor<br/>de <span>casa,</span><br/>listo para llevar.</h1>
+    <p class="hero-sub">Comida casera, abundante y a precios justos. Hacé tu pedido por WhatsApp y pasá a buscarlo en Calle 3 755.</p>
+    <div class="hero-actions">
+      <a href="#menu" class="btn-primary">🍽️ Ver el menú</a>
+      <a href="https://wa.me/543546488351?text=Hola%2C%20quiero%20hacer%20un%20pedido" class="btn-secondary" target="_blank" rel="noopener">💬 Pedir por WhatsApp</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><span class="hero-stat-icon">⭐</span><span class="hero-stat-text"><span class="hero-stat-num">9.2</span>puntuación local</span></div>
+      <div class="hero-stat"><span class="hero-stat-icon">📍</span><span class="hero-stat-text">Calle 3 755, Villa Incor</span></div>
+      <div class="hero-stat"><span class="hero-stat-icon">🏠</span><span class="hero-stat-text">Comida casera cordobesa</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="menu-section" id="menu">
+  <div class="menu-header reveal">
+    <p class="section-label">Lo que más piden</p>
+    <h2 class="section-title">Nuestros favoritos</h2>
+    <p class="section-sub">Preparado con ingredientes frescos cada día. Sin conservantes, sin atajos — como en casa pero mejor.</p>
+  </div>
+  <div class="menu-filters reveal">
+    <button class="filter-btn active" onclick="filterMenu('all')">Todos</button>
+    <button class="filter-btn" onclick="filterMenu('Lomitos')">Lomitos</button>
+    <button class="filter-btn" onclick="filterMenu('Hamburguesas')">Hamburguesas</button>
+    <button class="filter-btn" onclick="filterMenu('Milanesas')">Milanesas</button>
+    <button class="filter-btn" onclick="filterMenu('Pizzas')">Pizzas</button>
+    <button class="filter-btn" onclick="filterMenu('Bebidas')">Bebidas</button>
+  </div>
+  <div class="menu-grid" id="menu-grid">
+    <div class="menu-card" data-item="Lomito Americano"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/SaveClip.App_369996308_18283054210122984_257038325478517335_n.jpg" alt="Lomito Americano" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Lomitos</span><h3 class="menu-card-name">Lomito Americano</h3><p class="menu-card-desc">Pan, lechuga, tomate, bife, cheddar, cebolla, huevo y panceta + papas fritas!!!</p><div class="menu-card-footer"><span class="menu-card-price">$3.500</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+    <div class="menu-card" data-item="Lomito Clasico"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/SaveClip.App_568508155_18189018340327863_7996907510168956897_n.jpg" alt="Lomito Clasico" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Lomitos</span><h3 class="menu-card-name">Lomito Clasico</h3><p class="menu-card-desc">Pan, lechuga, tomate, bife, jamon, queso, huevo + papas fritas!!!</p><div class="menu-card-footer"><span class="menu-card-price">$3.000</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+    <div class="menu-card" data-item="XL Completa"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/Hamburguesa-348-1-1024x1024.jpg" alt="XL Completa" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Hamburguesas</span><h3 class="menu-card-name">XL Completa</h3><p class="menu-card-desc">Pan, lechuga, tomate, medallon XL, jamon, queso, huevo + papas fritas!!!</p><div class="menu-card-footer"><span class="menu-card-price">$3.200</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+    <div class="menu-card" data-item="XL Americana"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/Q2PIASNR4BD67KDXFWFX7C22LM.jpg" alt="XL Americana" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Hamburguesas</span><h3 class="menu-card-name">XL Americana</h3><p class="menu-card-desc">Pan, lechuga, tomate, cheddar, panceta, cebolla, huevo + papas fritas!!!</p><div class="menu-card-footer"><span class="menu-card-price">$3.000</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+    <div class="menu-card" data-item="Sandwich de mila"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/milanesa-italianajpg.jpg" alt="Sandwich de mila" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Milanesas</span><h3 class="menu-card-name">Sandwich de mila</h3><p class="menu-card-desc">Pan, lechuga, tomate, mila de ternera, jamon, queso, huevo + papas fritas!!!</p><div class="menu-card-footer"><span class="menu-card-price">$2.800</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+    <div class="menu-card" data-item="Pizza Muzzarella"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/santo-bar-pizzas-1jpg.jpg" alt="Pizza Muzzarella" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Pizzas</span><h3 class="menu-card-name">Pizza Muzzarella</h3><p class="menu-card-desc">Pizza con abundante queso muzzarella y piso crocante</p><div class="menu-card-footer"><span class="menu-card-price">$2.500</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+    <div class="menu-card" data-item="Coca-Cola"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/cocacola.jpg" alt="Coca-Cola" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Bebidas</span><h3 class="menu-card-name">Coca-Cola</h3><p class="menu-card-desc">Disponible : 500ml, 1L y 2.5L</p><div class="menu-card-footer"><span class="menu-card-price">$800</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+    <div class="menu-card" data-item="Sprite"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/sprite.jpg" alt="Sprite" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Bebidas</span><h3 class="menu-card-name">Sprite</h3><p class="menu-card-desc">Disponible : 500ml y 2L</p><div class="menu-card-footer"><span class="menu-card-price">$800</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+    <div class="menu-card" data-item="Cerveza"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/2-Coronas.jpg" alt="Cerveza" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Bebidas</span><h3 class="menu-card-name">Cerveza</h3><p class="menu-card-desc">Disponible : Corona 330ml, Brahma 500ml y Cordoba 473ml</p><div class="menu-card-footer"><span class="menu-card-price">$1.200</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+    <div class="menu-card" data-item="Mila Clasica"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/milanesa-italianajpg.jpg" alt="Mila Clasica" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Milanesas</span><h3 class="menu-card-name">Mila Clasica</h3><p class="menu-card-desc">Mila de ternera + guarnicion fritas/ensalada/pure!!!</p><div class="menu-card-footer"><span class="menu-card-price">$2.800</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+    <div class="menu-card" data-item="Mila Napolitana"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/milanesa-a-la-napolitana-con-guarnicion-de-papas-VLWFAANIWBGPFO4CSUHS7RYVVQ.avif" alt="Mila Napolitana" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Milanesas</span><h3 class="menu-card-name">Mila Napolitana</h3><p class="menu-card-desc">Mila de ternera, salsa, oregano, muzza + guarnicion fritas/ensalada/pure!!!</p><div class="menu-card-footer"><span class="menu-card-price">$3.000</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+    <div class="menu-card" data-item="Mila Americana"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/453452355_18189018340327863_7996907510168956897_n.jpg" alt="Mila Americana" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Milanesas</span><h3 class="menu-card-name">Mila Americana</h3><p class="menu-card-desc">Mila de ternera, cheddar, panceta, cebolla, huevo + guarnicion fritas/ensalada/pure!!!</p><div class="menu-card-footer"><span class="menu-card-price">$3.200</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+    <div class="menu-card" data-item="4 Quesos"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/pizza-4quesos-scaled.jpg" alt="4 Quesos" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Milanesas</span><h3 class="menu-card-name">4 Quesos</h3><p class="menu-card-desc">Mila de ternera, queso azul, tybo, muzza, provolone + fritas/ensalada/pure!!!</p><div class="menu-card-footer"><span class="menu-card-price">$2.800</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+    <div class="menu-card" data-item="Pizza Especial"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/pizza-especial-salsa.jpg" alt="Pizza Especial" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Pizzas</span><h3 class="menu-card-name">Pizza Especial</h3><p class="menu-card-desc">Salsa, jamon, muzza, tomates, aceitunas y oregano</p><div class="menu-card-footer"><span class="menu-card-price">$2.600</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+    <div class="menu-card" data-item="Pizza Fugazzeta"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/image-592.png" alt="Pizza Fugazzeta" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Pizzas</span><h3 class="menu-card-name">Pizza Fugazzeta</h3><p class="menu-card-desc">Salsa, muzza, cebolla caramelizada, oregano y aceitunas</p><div class="menu-card-footer"><span class="menu-card-price">$2.400</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+    <div class="menu-card" data-item="Pizza 4 Quesos"><div class="menu-card-img"><img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/pizza-4quesos-scaled.jpg" alt="Pizza 4 Quesos" loading="lazy"/></div><div class="menu-card-body"><span class="menu-card-cat">Pizzas</span><h3 class="menu-card-name">Pizza 4 Quesos</h3><p class="menu-card-desc">Salsa, muzza, tybo, azul, cheddar, aceitunas y oregano</p><div class="menu-card-footer"><span class="menu-card-price">$2.800</span><div class="qty-control"><button class="qty-btn" onclick="changeQty(this,-1)">−</button><span class="qty-num">0</span><button class="qty-btn" onclick="changeQty(this,1)">+</button></div></div></div></div>
+  </div>
+  <div class="menu-wa-cta reveal">
+    <p style="font-size:0.9rem;color:var(--c-muted);margin-bottom:16px">¿Querés saber el menú del día o los precios actuales?</p>
+    <a href="https://wa.me/543546488351?text=Hola%2C%20quiero%20hacer%20un%20pedido" class="btn-primary" target="_blank" rel="noopener">💬 Consultá por WhatsApp</a>
+  </div>
+</section>
+
+<div class="rating-strip reveal">
+  <div><div class="rating-big">9.2</div><div class="rating-stars">★★★★★</div><div class="rating-sub">Puntuación local promedio</div></div>
+  <div style="max-width:420px">
+    <p style="font-size:1.15rem;font-weight:600;color:#fff;margin-bottom:8px;font-family:'Syne',sans-serif">"La mejor relación calidad–precio de la zona"</p>
+    <p style="font-size:0.88rem;color:rgba(255,255,255,0.7);line-height:1.6">Porciones generosas, precios justos y el sabor de la comida de siempre. Por eso nuestros clientes vuelven.</p>
+  </div>
+  <a href="https://wa.me/543546488351?text=Hola%2C%20quiero%20hacer%20un%20pedido" class="btn-secondary" style="border-color:rgba(255,255,255,0.3);color:#fff" target="_blank" rel="noopener">Hacer mi pedido →</a>
+</div>
+
+<section class="why-section" id="nosotros">
+  <div class="reveal">
+    <p class="section-label">Por qué elegirnos</p>
+    <h2 class="section-title">Comida de barrio,<br/>calidad de restorán.</h2>
+    <p class="section-sub">Lo que nos diferencia no es el marketing — es lo que está en el plato.</p>
+  </div>
+  <div class="why-grid">
+    <div class="why-card reveal"><div class="why-icon">🫙</div><h3>Porciones abundantes</h3><p>Nunca vas a quedar con hambre. Servimos como en casa — con la generosidad de siempre.</p></div>
+    <div class="why-card reveal"><div class="why-icon">🪙</div><h3>Precios justos</h3><p>Comida rica y en cantidad no tiene por qué ser cara. Así lo entendemos nosotros.</p></div>
+    <div class="why-card reveal"><div class="why-icon">🥬</div><h3>Ingredientes frescos</h3><p>Compramos y preparamos a diario. Sin congelados, sin atajos — el sabor se nota.</p></div>
+    <div class="why-card reveal"><div class="why-icon">🏠</div><h3>Sabor casero real</h3><p>La receta de siempre, con el cariño de siempre. Como lo hacía la abuela, pero listo para llevar.</p></div>
+    <div class="why-card reveal"><div class="why-icon">⚡</div><h3>Listo rápido</h3><p>Pedí por WhatsApp y pasá a buscarlo. Sin esperas largas ni sorpresas.</p></div>
+    <div class="why-card reveal"><div class="why-icon">📍</div><h3>En el corazón del barrio</h3><p>Estamos en Villa Incor desde hace años. Somos parte de la comunidad.</p></div>
+  </div>
+</section>
+
+<section class="contact-section" id="ubicacion">
+  <div class="reveal">
+    <p class="section-label">Dónde encontrarnos</p>
+    <h2 class="section-title">Ubicación y horarios</h2>
+  </div>
+  <div class="contact-grid">
+    <div class="contact-card-map reveal">
+      <h3><span class="contact-icon">📍</span>Encuéntranos en el mapa</h3>
+      <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3384.8261485789093!2d-64.5370502!3d-32.0825436!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95d2bb4b13c80831%3A0x5e3f200d15bd900d!2sRocha's%20rotiseria!5e0!3m2!1ses!2sar!4v1709567490000" width="100%" height="300" style="border:0;border-radius:var(--radius);margin-bottom:20px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      <div class="address-line"><span class="address-line-icon">🏠</span><div><strong style="color:var(--c-cream);display:block">Calle 3 755 (entre 14 y 16)</strong><span>Santa Rosa de Calamuchita<br/>Córdoba, Argentina</span></div></div>
+      <div class="address-line"><span class="address-line-icon">📱</span><div><strong style="color:var(--c-cream);display:block">WhatsApp</strong><a href="https://wa.me/543546488351?text=Hola%2C%20quiero%20hacer%20un%20pedido" target="_blank" rel="noopener" style="color:var(--c-orange)">Hacé tu pedido</a></div></div>
+      <div class="address-line"><span class="address-line-icon">📸</span><div><strong style="color:var(--c-cream);display:block">Instagram</strong><a href="https://instagram.com/rochasrotiseria" target="_blank" style="color:var(--c-orange)">@rochasrotiseria</a></div></div>
+      <a href="https://maps.app.goo.gl/QmARWF93kgw1FR8C9" target="_blank" rel="noopener" class="map-link">🗺️ Abrir en Google Maps</a>
+    </div>
+    <div class="contact-card reveal">
+      <h3><span class="contact-icon">🕐</span>Horarios de atención</h3>
+      <div class="schedule-row"><span class="schedule-day">Lunes</span><span class="schedule-hours">11:30–15:00 · 20:30–00:30</span></div>
+      <div class="schedule-row"><span class="schedule-day">Martes</span><span class="schedule-hours">11:30–15:00 · 20:30–00:30</span></div>
+      <div class="schedule-row"><span class="schedule-day">Miércoles</span><span class="schedule-hours">11:30–15:00 · 20:30–00:30</span></div>
+      <div class="schedule-row"><span class="schedule-day">Jueves</span><span class="schedule-hours">11:30–15:00 · 20:30–00:30</span></div>
+      <div class="schedule-row"><span class="schedule-day">Viernes</span><span class="schedule-hours">11:30–15:00 · 20:30–00:30</span></div>
+      <div class="schedule-row"><span class="schedule-day">Sábado</span><span class="schedule-hours">11:30–15:00 · 20:30–00:30</span></div>
+      <div class="schedule-row schedule-row--closed"><span class="schedule-day">Domingo</span><span class="schedule-hours">Cerrado</span></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <img src="https://raw.githubusercontent.com/zzzJanozzz/Comida/main/F16D639C-021B-4C75-A02F-0A04206DD1B5.png" alt="Rocha's Rotisería" style="height:61px;width:auto;max-width:200px;object-fit:contain;display:block;margin-bottom:12px;"/>
+      <p>Comida casera, abundante y sabrosa. En Santa Rosa de Calamuchita desde siempre.</p>
+      <div class="footer-social">
+        <a href="https://wa.me/543546488351?text=Hola%2C%20quiero%20hacer%20un%20pedido%20en%20Rocha's%20Rotiser%C3%ADa" class="social-btn" target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>
+        <a href="https://instagram.com/rochasrotiseria" class="social-btn" target="_blank" aria-label="Instagram">📸</a>
+        <a href="#" class="social-btn" aria-label="Facebook">👍</a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h4>Navegación</h4>
+      <a href="#inicio">Inicio</a>
+      <a href="#menu">Menú</a>
+      <a href="#nosotros">Nosotros</a>
+      <a href="#ubicacion">Ubicación</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contacto</h4>
+      <a href="https://wa.me/543546488351?text=Hola%2C%20quiero%20hacer%20un%20pedido" target="_blank" rel="noopener">WhatsApp</a>
+      <a href="#ubicacion">Calle 3 755 (entre 14 y 16)</a>
+      <a href="#ubicacion">Santa Rosa de Calamuchita</a>
+      <a href="#ubicacion">Córdoba, Argentina</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="#" onclick="openTerms(event)">Términos y Condiciones</a>
+      <a href="#" onclick="openPrivacy(event)">Política de Privacidad</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 Rocha's Rotisería. Todos los derechos reservados.</p>
+    <p class="footer-credit">Diseño web por <a href="#" target="_blank" rel="noopener">JL Studios</a></p>
+  </div>
+</footer>
+
+<button class="cart-fab" onclick="openCart()" aria-label="Ver carrito"><span style="position:relative">🛒<span class="cart-badge" id="cart-badge">0</span></span></button>
+
+<div class="terms-overlay" id="terms-overlay" onclick="closeTerms()"></div>
+<div class="terms-modal" id="terms-modal">
+  <div class="terms-modal-head">
+    <h2>Términos y Condiciones</h2>
+    <button class="terms-close" onclick="closeTerms()">✕</button>
+  </div>
+  <div class="terms-modal-body">
+    <h3>1. Aceptación de Términos</h3>
+    <p>Al utilizar este sitio web, usted acepta cumplir con estos términos y condiciones. Si no está de acuerdo con alguna parte de estos términos, por favor, no utilice el sitio.</p>
+    
+    <h3>2. Uso del Sitio</h3>
+    <p>Este sitio se proporciona únicamente para fines informativos y de pedidos de comida. Usted se compromete a utilizar el sitio de manera legal y de conformidad con todas las leyes y regulaciones aplicables.</p>
+    
+    <h3>3. Pedidos y Pagos</h3>
+    <p>Los pedidos realizados a través de este sitio son válidos únicamente después de haber sido confirmados por Rocha's Studio. Los precios están sujetos a cambios sin previo aviso. El pago debe realizarse según las instrucciones proporcionadas.</p>
+    
+    <h3>4. Política de Cambios y Devoluciones</h3>
+    <p>Los productos alimenticios no pueden ser devueltos una vez entregados. En caso de inconformidad con la calidad del producto, comuníquese con nosotros inmediatamente por WhatsApp.</p>
+    
+    <h3>5. Limitación de Responsabilidad</h3>
+    <p>Rocha's Studio no se responsabiliza por daños indirectos, incidentales o consecuentes derivados del uso de este sitio.</p>
+    
+    <h3>6. Cambios en los Términos</h3>
+    <p>Nos reservamos el derecho de modificar estos términos en cualquier momento. Los cambios serán efectivos inmediatamente después de su publicación.</p>
+  </div>
+</div>
+
+<div class="terms-overlay" id="privacy-overlay" onclick="closePrivacy()"></div>
+<div class="terms-modal" id="privacy-modal">
+  <div class="terms-modal-head">
+    <h2>Política de Privacidad</h2>
+    <button class="terms-close" onclick="closePrivacy()">✕</button>
+  </div>
+  <div class="terms-modal-body">
+    <h3>1. Información que Recopilamos</h3>
+    <p>Recopilamos información personal que usted proporciona voluntariamente al realizar un pedido, como nombre, teléfono y dirección de entrega.</p>
+    
+    <h3>2. Uso de la Información</h3>
+    <p>La información recopilada se utiliza exclusivamente para procesar y entregar sus pedidos, así como para comunicarnos con usted respecto a su orden.</p>
+    
+    <h3>3. Protección de Datos</h3>
+    <p>Nos comprometemos a proteger su información personal. No compartimos datos con terceros sin su consentimiento.</p>
+    
+    <h3>4. Cookies</h3>
+    <p>Este sitio puede utilizar cookies para mejorar la experiencia del usuario. Las cookies son pequeños archivos almacenados en su navegador.</p>
+    
+    <h3>5. Derechos del Usuario</h3>
+    <p>Usted tiene derecho a acceder, modificar o eliminar su información personal. Contáctenos por WhatsApp para ejercer estos derechos.</p>
+    
+    <h3>6. Contacto</h3>
+    <p>Si tiene preguntas sobre nuestra política de privacidad, contáctenos a través de WhatsApp.</p>
+  </div>
+</div>
+
+<button class="cart-fab" onclick="openCart()" aria-label="Ver carrito"><span style="position:relative">🛒<span class="cart-badge" id="cart-badge">0</span></span></button>
+
+<div class="cart-overlay" id="cart-overlay" onclick="closeCart()"></div>
+<div class="cart-panel" id="cart-panel">
+  <div class="cart-panel-head">
+    <h3>🛒 Tu pedido</h3>
+    <button class="cart-close" onclick="closeCart()">✕</button>
+  </div>
+  <div id="cart-items-list"><p class="cart-empty">Todavía no agregaste nada.<br/>Usá los botones + del menú.</p></div>
+  <input class="cart-name-input" id="cart-name" type="text" placeholder="Tu nombre (para el pedido)" autocomplete="given-name"/>
+  <button class="cart-send-btn" onclick="sendCartWA()">💬 Enviar pedido por WhatsApp</button>
+</div>
+
+<a href="https://wa.me/543546488351?text=Hola%2C%20quiero%20hacer%20un%20pedido%20en%20Rocha's%20Rotiser%C3%ADa" class="wa-float" target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>
+
+<script>
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);}});
+  },{threshold:0.12,rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  const nav=document.querySelector('.nav');
+  window.addEventListener('scroll',()=>{
+    nav.style.background=window.scrollY>60?'rgba(14,10,7,0.97)':'rgba(14,10,7,0.88)';
+  },{passive:true});
+  // ── Cart ──────────────────────────────────────────────────────────────────
+  const cart={};
+  const WA_NUM='543546488351';
+  function changeQty(btn,delta){
+    const card=btn.closest('.menu-card');
+    const name=card.dataset.item;
+    const numEl=card.querySelector('.qty-num');
+    let q=parseInt(numEl.textContent)||0;
+    q=Math.max(0,q+delta);
+    numEl.textContent=q;
+    if(q>0) cart[name]=q; else delete cart[name];
+    updateBadge();
+    numEl.animate([{transform:'scale(1.4)',color:'var(--c-orange)'},{transform:'scale(1)',color:''}],{duration:220,easing:'ease-out'});
+  }
+  function updateBadge(){
+    const total=Object.values(cart).reduce((s,v)=>s+v,0);
+    const badge=document.getElementById('cart-badge');
+    badge.textContent=total;
+    badge.classList.toggle('show',total>0);
+  }
+  function filterMenu(category){
+    const cards=document.querySelectorAll('.menu-card');
+    const btns=document.querySelectorAll('.filter-btn');
+    btns.forEach(b=>b.classList.remove('active'));
+    event.target.classList.add('active');
+    cards.forEach(card=>{
+      if(category==='all') card.style.display='';
+      else {
+        const cardCat=card.querySelector('.menu-card-cat').textContent.trim();
+        card.style.display=cardCat===category?'':'none';
+      }
+    });
+  }
+  function openTerms(e){
+    e.preventDefault();
+    document.getElementById('terms-overlay').classList.add('open');
+    document.getElementById('terms-modal').classList.add('open');
+  }
+  function closeTerms(){
+    document.getElementById('terms-overlay').classList.remove('open');
+    document.getElementById('terms-modal').classList.remove('open');
+  }
+  function openPrivacy(e){
+    e.preventDefault();
+    document.getElementById('privacy-overlay').classList.add('open');
+    document.getElementById('privacy-modal').classList.add('open');
+  }
+  function closePrivacy(){
+    document.getElementById('privacy-overlay').classList.remove('open');
+    document.getElementById('privacy-modal').classList.remove('open');
+  }
+  function openCart(){
+    renderCartPanel();
+    document.getElementById('cart-overlay').classList.add('open');
+    document.getElementById('cart-panel').classList.add('open');
+  }
+  function closeCart(){
+    document.getElementById('cart-overlay').classList.remove('open');
+    document.getElementById('cart-panel').classList.remove('open');
+  }
+  function renderCartPanel(){
+    const list=document.getElementById('cart-items-list');
+    const keys=Object.keys(cart).filter(k=>cart[k]>0);
+    if(!keys.length){list.innerHTML='<p class="cart-empty">Todavía no agregaste nada.<br/>Usá los botones + del menú.</p>';return;}
+    list.innerHTML=keys.map(name=>`<div class="cart-item"><span class="cart-item-name">${name}</span><div class="cart-item-qty"><button onclick="panelQty('${name}',-1)">−</button><span>${cart[name]}</span><button onclick="panelQty('${name}',1)">+</button></div></div>`).join('');
+  }
+  function panelQty(name,delta){
+    cart[name]=Math.max(0,(cart[name]||0)+delta);
+    if(cart[name]===0) delete cart[name];
+    // sync card
+    document.querySelectorAll('.menu-card').forEach(c=>{if(c.dataset.item===name)c.querySelector('.qty-num').textContent=cart[name]||0;});
+    updateBadge();
+    renderCartPanel();
+  }
+  function sendCartWA(){
+    const keys=Object.keys(cart).filter(k=>cart[k]>0);
+    if(!keys.length){alert('Agregá items antes de enviar.');return;}
+    const nombre=document.getElementById('cart-name').value.trim();
+    let msg='¡Hola! Quiero hacer un pedido:\n\n';
+    keys.forEach(k=>{msg+='• '+cart[k]+'x '+k+'\n';});
+    if(nombre) msg+='\nMi nombre: '+nombre;
+    msg+='\n\n¿Me confirmás disponibilidad y precio? ¡Gracias!';
+    window.open('https://wa.me/'+WA_NUM+'?text='+encodeURIComponent(msg),'_blank');
+  }
+</script>
+</body>
+</html>
