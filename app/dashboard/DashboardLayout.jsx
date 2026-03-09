@@ -333,6 +333,21 @@ export default function DashboardLayout() {
           });
         }
 
+        // Normalizar: asegurar 7 días (evita UI rara cuando faltan filas)
+        const DAYS_KEYS = ["lun", "mar", "mie", "jue", "vie", "sab", "dom"];
+        const rochasDefaults = {
+          t1: { open: "11:30", close: "15:00", active: true },
+          t2: { open: "20:30", close: "00:30", active: true },
+          closed: false,
+        };
+        DAYS_KEYS.forEach(k => {
+          if (!scheduleMap[k]) {
+            scheduleMap[k] = supabaseData.username === "rochas"
+              ? { ...rochasDefaults }
+              : { t1: { open: "", close: "", active: true }, t2: { open: "", close: "", active: false }, closed: false };
+          }
+        });
+
         // Transformar datos de Supabase al formato esperado
         const sessionData = {
           id: supabaseData.id,
@@ -345,6 +360,12 @@ export default function DashboardLayout() {
           tagline: supabaseData.tagline,
           phone: supabaseData.phone,
           emailContact: supabaseData.email_contact || "",
+          notifications: {
+            gmail: supabaseData.notif_gmail ?? true,
+            weekly: supabaseData.notif_weekly ?? true,
+            visitAlert: supabaseData.notif_visit_alert ?? false,
+            whatsapp: supabaseData.notif_whatsapp ?? true,
+          },
           instagram: supabaseData.instagram,
           facebook: supabaseData.facebook,
           whatsapp: supabaseData.whatsapp,

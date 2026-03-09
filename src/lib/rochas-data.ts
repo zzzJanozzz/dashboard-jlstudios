@@ -38,7 +38,7 @@ export const ROCHAS_DATA = {
     jue: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
     vie: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
     sab: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
-    dom: { t1: { open: "",      close: "",       active: false }, t2: { open: "",      close: "",       active: false }, closed: true  },
+    dom: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
   },
 
   menuItems: [

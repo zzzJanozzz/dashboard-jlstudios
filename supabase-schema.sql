@@ -20,6 +20,11 @@ create table if not exists clients (
   accent_color         text default '#f59e0b',
   domain               text,
   tagline              text,
+  email_contact        text,
+  notif_gmail          boolean not null default true,
+  notif_weekly         boolean not null default true,
+  notif_visit_alert    boolean not null default false,
+  notif_whatsapp       boolean not null default true,
   whatsapp             text,
   phone                text,
   instagram            text,
@@ -128,7 +133,7 @@ cross join (values
   ('jue', 'false', '11:30', '15:00', 'true',  '20:30', '00:30', 'true'),
   ('vie', 'false', '11:30', '15:00', 'true',  '20:30', '00:30', 'true'),
   ('sab', 'false', '11:30', '15:00', 'true',  '20:30', '00:30', 'true'),
-  ('dom', 'true',  null,    null,    'false', null,    null,    'false')
+  ('dom', 'false', '11:30', '15:00', 'true',  '20:30', '00:30', 'true')
 ) as d(day_key, closed, t1_open, t1_close, t1_active, t2_open, t2_close, t2_active)
 where c.username = 'rochas'
 on conflict (client_id, day_key) do nothing;

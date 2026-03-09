@@ -193,6 +193,27 @@ function FieldInput({ field, value, onChange, accent }) {
     );
   }
 
+  if (field.type === "combo") {
+    const datalistId = `field-options-${field.key}`;
+    return (
+      <>
+        <input
+          list={datalistId}
+          type="text"
+          value={value ?? ""}
+          placeholder={field.placeholder}
+          onChange={e => onChange(e.target.value)}
+          onFocus={e => Object.assign(e.target.style, focusStyle)} onBlur={e => { e.target.style.borderColor = "#334155"; e.target.style.boxShadow = "none"; }}
+          className={base}
+          required={field.required}
+        />
+        <datalist id={datalistId}>
+          {field.options.map(o => <option key={o} value={o} />)}
+        </datalist>
+      </>
+    );
+  }
+
   if (field.type === "select") {
     return (
       <select value={value ?? ""} onChange={e => onChange(e.target.value)}
@@ -234,14 +255,25 @@ function FieldInput({ field, value, onChange, accent }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // EDIT / CREATE MODAL
 // ─────────────────────────────────────────────────────────────────────────────
-function ItemModal({ item, schema, accent, onSave, onClose }) {
+function ItemModal({ item, schema, accent, categoryOptions, onSave, onClose }) {
   const isNew = !item.id;
   const [form, setForm] = useState({ ...item });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
+  const categoryFieldKey = schema.categoryField;
+  const normalizedFields = schema.fields.map(field => {
+    if (field.key !== categoryFieldKey) return field;
+    return {
+      ...field,
+      type: "combo",
+      options: categoryOptions,
+      placeholder: field.placeholder ?? "Escribí una categoría nueva o elegí una existente",
+    };
+  });
+
   // Separate toggle fields from regular fields for layout
-  const regularFields = schema.fields.filter(f => f.type !== "toggle");
-  const toggleFields  = schema.fields.filter(f => f.type === "toggle");
+  const regularFields = normalizedFields.filter(f => f.type !== "toggle");
+  const toggleFields  = normalizedFields.filter(f => f.type === "toggle");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -275,7 +307,7 @@ function ItemModal({ item, schema, accent, onSave, onClose }) {
             </div>
             <div className="flex-1">
               <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-2">Nombre *</label>
-              <FieldInput field={schema.fields.find(f => f.key === "nombre")} value={form.nombre} onChange={v => set("nombre", v)} accent={accent} />
+              <FieldInput field={normalizedFields.find(f => f.key === "nombre")} value={form.nombre} onChange={v => set("nombre", v)} accent={accent} />
             </div>
           </div>
 
@@ -465,6 +497,9 @@ export default function ContentManager({ session }) {
     try {
       setSyncing(true);
 
+      const normalizedCategory = (updated[schema.categoryField] ?? "").trim();
+      const normalizedPrice = updated[schema.priceField];
+
       if (!updated.id || typeof updated.id === 'number') {
         // INSERT nuevo item
         const { data, error } = await supabase
@@ -472,8 +507,8 @@ export default function ContentManager({ session }) {
           .insert({
             client_id: clientId,
             nombre: updated.nombre,
-            categoria: updated.categoria,
-            precio: parseFloat(updated.precio),
+            categoria: normalizedCategory,
+            precio: parseFloat(normalizedPrice),
             descripcion: updated.desc,
             image_url: updated.imageUrl || null,
             emoji: updated.emoji || '✨',
@@ -497,8 +532,8 @@ export default function ContentManager({ session }) {
           .from('menu_items')
           .update({
             nombre: updated.nombre,
-            categoria: updated.categoria,
-            precio: parseFloat(updated.precio),
+            categoria: normalizedCategory,
+            precio: parseFloat(normalizedPrice),
             descripcion: updated.desc,
             image_url: updated.imageUrl,
             emoji: updated.emoji,
@@ -598,7 +633,10 @@ export default function ContentManager({ session }) {
     }
   };
 
-  const cats = ["Todos", ...(schema.fields.find(f => f.key === schema.categoryField)?.options ?? [])];
+  const baseCategoryOptions = schema.fields.find(f => f.key === schema.categoryField)?.options ?? [];
+  const dbCategoryOptions = [...new Set(items.map(i => i[schema.categoryField]).filter(Boolean))];
+  const categoryOptions = [...new Set([...baseCategoryOptions, ...dbCategoryOptions])].sort((a, b) => a.localeCompare(b, "es"));
+  const cats = ["Todos", ...categoryOptions];
   const filtered = filterCat === "Todos" ? items : items.filter(it => it[schema.categoryField] === filterCat);
   const activeCount = items.filter(i => i.activo).length;
 
@@ -710,11 +748,10 @@ export default function ContentManager({ session }) {
 
       {/* Modal */}
       {editingItem && (
-        <ItemModal item={editingItem} schema={schema} accent={accent}
-          onSave={handleSave} onClose={() => setEditingItem(null)} />
+        <ItemModal item={editingItem} schema={schema} accent={accent} categoryOptions={categoryOptions} onSave={handleSave} onClose={() => setEditingItem(null)} />
       )}
 
-      <FloatingPublishBtn onClick={handlePublish} loading={publishing || syncing} accent={accent} />
+      <FloatingPublishBtn onClick={handlePublish} loading={publishing} accent={accent} />
       <Toast show={toast.show} success={toast.success} message={toast.message} />
     </div>
   );

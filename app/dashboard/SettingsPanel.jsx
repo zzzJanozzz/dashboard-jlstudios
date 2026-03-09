@@ -46,6 +46,16 @@ const validateURL = (v) => {
   try { new URL(v); return true; } catch { return false; }
 };
 
+const validateEmbedURL = (v) => {
+  if (!v) return true; // optional
+  try {
+    const u = new URL(v);
+    return u.hostname.includes("google") || u.hostname.includes("maps");
+  } catch {
+    return false;
+  }
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SHARED UI ATOMS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -168,10 +178,10 @@ export default function SettingsPanel({ session }) {
 
   // ── NOTIFICATIONS ──
   const [notifEmail,       setNotifEmail]      = useState(session.emailContact ?? "");
-  const [notifGmail,       setNotifGmail]       = useState(true);
-  const [notifWeekly,      setNotifWeekly]      = useState(true);
-  const [notifVisitAlert,  setNotifVisitAlert]  = useState(false);
-  const [notifWA,          setNotifWA]          = useState(true);
+  const [notifGmail,       setNotifGmail]       = useState(session.notifications?.gmail ?? true);
+  const [notifWeekly,      setNotifWeekly]      = useState(session.notifications?.weekly ?? true);
+  const [notifVisitAlert,  setNotifVisitAlert]  = useState(session.notifications?.visitAlert ?? false);
+  const [notifWA,          setNotifWA]          = useState(session.notifications?.whatsapp ?? true);
 
   // ── HERO ──
   const [heroBadge,          setHeroBadge]          = useState(session.hero?.badge          ?? "");
@@ -185,6 +195,7 @@ export default function SettingsPanel({ session }) {
   const [instagram,    setInstagram]    = useState(session.instagram ?? "");
   const [facebook,     setFacebook]     = useState(session.facebook ?? "");
   const [googleMaps,   setGoogleMaps]   = useState(session.googleMaps ?? "");
+  const [googleMapsEmbed, setGoogleMapsEmbed] = useState(session.googleMapsEmbed ?? "");
   const [address,      setAddress]      = useState(session.address ?? "");
   const [city,         setCity]         = useState(session.city ?? "");
 
@@ -240,6 +251,9 @@ export default function SettingsPanel({ session }) {
     if (googleMaps && !validateURL(googleMaps)) {
       e.googleMaps = "Debe ser una URL válida (https://maps.google.com/...)";
     }
+    if (googleMapsEmbed && !validateEmbedURL(googleMapsEmbed)) {
+      e.googleMapsEmbed = "Pegá un link válido de Google Maps Embed (https://www.google.com/maps/embed?...).";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -257,7 +271,7 @@ export default function SettingsPanel({ session }) {
         emailContact: notifEmail,
         notifications: { gmail: notifGmail, weekly: notifWeekly, visitAlert: notifVisitAlert, whatsapp: notifWA },
         hero: { badge: heroBadge, title: heroTitle, titleHighlight: heroTitleHighlight, subtitle: heroSubtitle },
-        phone, whatsapp, instagram, facebook, googleMaps, address, city,
+        phone, whatsapp, instagram, facebook, googleMaps, googleMapsEmbed, address, city,
         schedule,
         maintenance,
       };
@@ -266,6 +280,11 @@ export default function SettingsPanel({ session }) {
       const { error: clientError } = await supabase
         .from('clients')
         .update({
+          email_contact: notifEmail,
+          notif_gmail: notifGmail,
+          notif_weekly: notifWeekly,
+          notif_visit_alert: notifVisitAlert,
+          notif_whatsapp: notifWA,
           hero_badge: heroBadge,
           hero_title: heroTitle,
           hero_title_highlight: heroTitleHighlight,
@@ -275,6 +294,7 @@ export default function SettingsPanel({ session }) {
           instagram,
           facebook,
           google_maps_short: googleMaps,
+          google_maps_embed: googleMapsEmbed,
           address,
           city,
         })
@@ -285,8 +305,11 @@ export default function SettingsPanel({ session }) {
       // 2. Upsert schedules
       const DAYS_KEYS = ["lun", "mar", "mie", "jue", "vie", "sab", "dom"];
       for (const dayKey of DAYS_KEYS) {
-        const d = schedule[dayKey];
-        if (!d) continue;
+        const d = schedule[dayKey] ?? {
+          t1: { open: "11:30", close: "15:00", active: true },
+          t2: { open: "20:30", close: "00:30", active: true },
+          closed: false,
+        };
         const { error: schedError } = await supabase
           .from('schedules')
           .upsert({
@@ -376,7 +399,7 @@ export default function SettingsPanel({ session }) {
         </SectionCard>
 
         {/* ── 3. NOTIFICATIONS ── */}
-        <SectionCard title="Notificaciones" subtitle="Configurá a qué correo llegan los avisos" icon={Bell} accent="#60a5fa">
+        <SectionCard title="Notificaciones" subtitle="Dejá listo qué avisos va a usar tu CMS cuando el sitio esté conectado en producción" icon={Bell} accent="#60a5fa">
           <FormInput
             label="Email para recibir notificaciones"
             value={notifEmail}
@@ -388,6 +411,8 @@ export default function SettingsPanel({ session }) {
             error={errors.notifEmail}
             hint="Las alertas del sitio, reportes y avisos llegarán aquí."
           />
+          <Divider />
+          <ToggleRow label="Notificaciones por email activas" description="Si lo apagás, el correo queda guardado pero no se usarán avisos por mail" checked={notifGmail} onChange={setNotifGmail} color="#60a5fa" />
           <Divider />
           <ToggleRow label="Resumen semanal" description="Cada lunes: visitas, clics y actividad de la semana" checked={notifWeekly} onChange={setNotifWeekly} color="#60a5fa" />
           <Divider />
@@ -431,6 +456,15 @@ export default function SettingsPanel({ session }) {
             placeholder="https://maps.google.com/?q=..." icon={MapPin}
             error={errors.googleMaps}
             hint="El botón 'Cómo llegar' en tu sitio usará este enlace."
+          />
+          <FormInput
+            label="Google Maps Embed (iframe)"
+            value={googleMapsEmbed}
+            onChange={setGoogleMapsEmbed}
+            placeholder="https://www.google.com/maps/embed?pb=..."
+            icon={MapPin}
+            error={errors.googleMapsEmbed}
+            hint="Pegá el link del iframe. Se usa para mostrar el mapa dentro de tu web."
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormInput label="Dirección física" value={address} onChange={setAddress}
