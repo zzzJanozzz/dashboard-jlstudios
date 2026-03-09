@@ -25,12 +25,13 @@ import {
   MessageSquare, Mail, Eye, EyeOff, Lock, RefreshCw, ExternalLink,
   Zap, Server,
 } from "lucide-react";
+import { supabase } from "@/src/lib/supabase";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DAYS OF WEEK
 // ─────────────────────────────────────────────────────────────────────────────
-const DAYS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"];
-const DAY_LABELS = { lun: "Lunes", mar: "Martes", mié: "Miércoles", jue: "Jueves", vie: "Viernes", sáb: "Sábado", dom: "Domingo" };
+const DAYS = ["lun", "mar", "mie", "jue", "vie", "sab", "dom"];
+const DAY_LABELS = { lun: "Lunes", mar: "Martes", mie: "Miércoles", jue: "Jueves", vie: "Viernes", sab: "Sábado", dom: "Domingo" };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VALIDATION HELPERS
@@ -134,7 +135,7 @@ function MaintenanceModal({ isOn, onConfirm, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/75 backdrop-blur-md" onClick={onClose} />
       <div className="relative w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden text-center p-8">
-        <div className="absolute top-0 left-0 right-0 h-[2px]"
+        <div className="absolute top-0 left-0 right-0 h-0.5"
           style={{ background: isOn ? "linear-gradient(90deg,#4ade80,#22d3ee)" : "linear-gradient(90deg,#f97316,#ef4444)" }} />
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
           style={{ background: isOn ? "rgba(74,222,128,.1)" : "rgba(249,115,22,.1)" }}>
@@ -261,35 +262,48 @@ export default function SettingsPanel({ session }) {
         maintenance,
       };
 
-      /**
-       * TODO: Replace simulation with real API call:
-       *
-       * const res = await fetch("/api/update-settings", {
-       *   method: "POST",
-       *   headers: { "Content-Type": "application/json" },
-       *   body: JSON.stringify(payload),
-       * });
-       * if (!res.ok) throw new Error(await res.text());
-       *
-       * TODO: Inside /api/update-settings:
-       *   1. Validate JWT / NextAuth session to confirm client owns this record
-       *   2. Validate payload with Zod:
-       *      const schema = z.object({ clientId: z.string(), email: z.string().email(), ... })
-       *      schema.parse(payload)
-       *   3. Write to DB:
-       *      await prisma.client.update({ where: { username: payload.clientId }, data: { ...payload } })
-       *      — OR — Supabase:
-       *      await supabase.from('clients').update(payload).eq('username', payload.clientId)
-       *   4. Flush Cloudflare cache for this client's zone:
-       *      await fetch(`https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache`, {
-       *        method: 'POST',
-       *        headers: { Authorization: `Bearer ${CF_TOKEN}`, 'Content-Type': 'application/json' },
-       *        body: JSON.stringify({ purge_everything: true }),
-       *      });
-       *   5. Return { ok: true, publishedAt: new Date() }
-       */
-      await new Promise(r => setTimeout(r, 1800)); // ← remove when real fetch is in place
-      console.log("[SettingsPanel] Payload ready for API:", payload);
+      // 1. Update clients table
+      const { error: clientError } = await supabase
+        .from('clients')
+        .update({
+          hero_badge: heroBadge,
+          hero_title: heroTitle,
+          hero_title_highlight: heroTitleHighlight,
+          hero_subtitle: heroSubtitle,
+          phone,
+          whatsapp,
+          instagram,
+          facebook,
+          google_maps_short: googleMaps,
+          address,
+          city,
+        })
+        .eq('id', session.id);
+
+      if (clientError) throw clientError;
+
+      // 2. Upsert schedules
+      const DAYS_KEYS = ["lun", "mar", "mie", "jue", "vie", "sab", "dom"];
+      for (const dayKey of DAYS_KEYS) {
+        const d = schedule[dayKey];
+        if (!d) continue;
+        const { error: schedError } = await supabase
+          .from('schedules')
+          .upsert({
+            client_id: session.id,
+            day_key: dayKey,
+            closed: d.closed ?? false,
+            t1_open: d.t1?.open || null,
+            t1_close: d.t1?.close || null,
+            t1_active: d.t1?.active ?? true,
+            t2_open: d.t2?.open || null,
+            t2_close: d.t2?.close || null,
+            t2_active: d.t2?.active ?? false,
+          }, { onConflict: 'client_id,day_key' });
+        if (schedError) throw schedError;
+      }
+
+      console.log("[SettingsPanel] Saved to Supabase:", payload);
       showToast("✅ Configuración guardada y aplicada en tu sitio");
     } catch (err) {
       console.error("[SettingsPanel] Save error:", err);

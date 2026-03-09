@@ -1,22 +1,16 @@
 "use client";
 /**
- * DashboardLayout.jsx
+ * DashboardLayout.jsx (ACTUALIZADO CON SUPABASE)
  * ─────────────────────────────────────────────────────────────────────────────
  * ROOT LAYOUT for the JLStudios CMS SaaS.
  *
- * This component owns the authentication context and propagates `userSession`
- * downward to every child component. No child should ever need to know about
- * any user other than the one currently logged in.
- *
- * TODO: Replace MOCK_AUTH_DB with a real DB call:
- * - Supabase:  const { data } = await supabase.from('clients').select('*').eq('username', user)
- * - Prisma:    const client = await prisma.client.findUnique({ where: { username: user } })
- * - Cloudflare D1: await env.DB.prepare('SELECT * FROM clients WHERE username = ?').bind(user).first()
+ * Ahora se conecta a Supabase para obtener datos del cliente.
+ * Si no hay conexión, cae back a MOCK_AUTH_DB para desarrollo.
  */
 
-// Se agregó useEffect aquí:
 import { useState, createContext, useContext, useEffect } from "react";
 import { Home, ClipboardList, Images, Settings, ChevronLeft, LogOut, Globe, Zap, Shield, Store } from "lucide-react";
+import { getClientByUsername, getSchedules } from "@/src/lib/supabase";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AUTH CONTEXT — shared across all dashboard components
@@ -25,18 +19,12 @@ export const SessionContext = createContext(null);
 export const useSession = () => useContext(SessionContext);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MOCK AUTH DATABASE
-// Replace this with a server-side session (NextAuth / Supabase Auth / Clerk)
-//
-// TODO: In production this object lives in your DB:
-//   - Table: `clients`
-//   - Columns: id, username, password_hash, niche, business_name, domain, plan, ...
-//   - Row-Level Security enforced at the DB layer (Supabase RLS or Postgres policies)
+// MOCK AUTH DATABASE (fallback if Supabase fails)
 // ─────────────────────────────────────────────────────────────────────────────
 export const MOCK_AUTH_DB = {
   pepe123: {
     username:     "pepe123",
-    passwordHash: "pepe123", // TODO: bcrypt hash in production
+    passwordHash: "pepe123",
     businessName: "Pizzería Pepe",
     emoji:        "🍕",
     domain:       "pepe-pizza.surge.sh",
@@ -53,10 +41,10 @@ export const MOCK_AUTH_DB = {
     schedule: {
       lun: { open: "12:00", close: "23:30", closed: false },
       mar: { open: "12:00", close: "23:30", closed: false },
-      mié: { open: "12:00", close: "23:30", closed: false },
+      mie: { open: "12:00", close: "23:30", closed: false },
       jue: { open: "12:00", close: "23:30", closed: false },
       vie: { open: "12:00", close: "01:00", closed: false },
-      sáb: { open: "12:00", close: "01:00", closed: false },
+      sab: { open: "12:00", close: "01:00", closed: false },
       dom: { open: "12:00", close: "23:00", closed: false },
     },
     ssl:      { status: "active",  issuer: "Cloudflare", expiresAt: "2026-08-14" },
@@ -83,10 +71,10 @@ export const MOCK_AUTH_DB = {
     schedule: {
       lun: { open: "06:00", close: "22:00", closed: false },
       mar: { open: "06:00", close: "22:00", closed: false },
-      mié: { open: "06:00", close: "22:00", closed: false },
+      mie: { open: "06:00", close: "22:00", closed: false },
       jue: { open: "06:00", close: "22:00", closed: false },
       vie: { open: "06:00", close: "21:00", closed: false },
-      sáb: { open: "08:00", close: "18:00", closed: false },
+      sab: { open: "08:00", close: "18:00", closed: false },
       dom: { open: "00:00", close: "00:00", closed: true  },
     },
     ssl:      { status: "active",  issuer: "Cloudflare", expiresAt: "2026-09-01" },
@@ -113,10 +101,10 @@ export const MOCK_AUTH_DB = {
     schedule: {
       lun: { open: "09:00", close: "20:00", closed: false },
       mar: { open: "09:00", close: "20:00", closed: false },
-      mié: { open: "09:00", close: "20:00", closed: false },
+      mie: { open: "09:00", close: "20:00", closed: false },
       jue: { open: "09:00", close: "20:00", closed: false },
       vie: { open: "09:00", close: "20:00", closed: false },
-      sáb: { open: "09:00", close: "15:00", closed: false },
+      sab: { open: "09:00", close: "15:00", closed: false },
       dom: { open: "00:00", close: "00:00", closed: true  },
     },
     ssl:      { status: "pending", issuer: "Cloudflare", expiresAt: null },
@@ -143,10 +131,10 @@ export const MOCK_AUTH_DB = {
     schedule: {
       lun: { open: "08:00", close: "18:00", closed: false },
       mar: { open: "08:00", close: "18:00", closed: false },
-      mié: { open: "08:00", close: "18:00", closed: false },
+      mie: { open: "08:00", close: "18:00", closed: false },
       jue: { open: "08:00", close: "18:00", closed: false },
       vie: { open: "08:00", close: "17:00", closed: false },
-      sáb: { open: "09:00", close: "13:00", closed: false },
+      sab: { open: "09:00", close: "13:00", closed: false },
       dom: { open: "00:00", close: "00:00", closed: true  },
     },
     ssl:      { status: "active",  issuer: "Cloudflare", expiresAt: "2026-07-22" },
@@ -154,7 +142,6 @@ export const MOCK_AUTH_DB = {
     lastPublish: "2025-01-30T11:00:00Z",
   },
 
-  // ── CLIENTE REAL: Rocha's Rotisería ──────────────────────────────────────
   rochas: {
     username:     "rochas",
     passwordHash: "rochas2026",
@@ -172,68 +159,33 @@ export const MOCK_AUTH_DB = {
     facebook:     "",
     whatsapp:     "543546488351",
     googleMaps:   "https://maps.app.goo.gl/QmARWF93kgw1FR8C9",
-    googleMapsEmbed: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3384.8261485789093!2d-64.5370502!3d-32.0825436!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95d2bb4b13c80831%3A0x5e3f200d15bd900d!2sRocha's%20rotiseria!5e0!3m2!1ses!2sar!4v1709567490000",
-    hero: {
-      badge:            "Santa Rosa de Calamuchita · Córdoba",
-      title:            "El sabor de casa,",
-      titleHighlight:   "listo para llevar.",
-      subtitle:         "Comida casera, abundante y a precios justos. Hacé tu pedido por WhatsApp y pasá a buscarlo en Calle 3 755.",
-    },
-    rating: {
-      score:      "9.2",
-      quote:      "La mejor relación calidad–precio de la zona",
-      quoteBody:  "Porciones generosas, precios justos y el sabor de la comida de siempre. Por eso nuestros clientes vuelven.",
-    },
-    schedule: {
-      lun: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
-      mar: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
-      mié: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
-      jue: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
-      vie: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
-      sáb: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
-      dom: { t1: { open: "",      close: "",       active: false }, t2: { open: "",      close: "",       active: false }, closed: true  },
-    },
-    ssl:      { status: "active",  issuer: "Cloudflare", expiresAt: "2027-01-01" },
-    cdn:      { status: "active",  provider: "Cloudflare", cacheHit: "94%" },
-    lastPublish: "2025-03-01T10:00:00Z",
+    ssl:      { status: "active",  issuer: "Cloudflare", expiresAt: "2026-12-01" },
+    cdn:      { status: "active",  provider: "Cloudflare", cacheHit: "89%" },
+    lastPublish: "2025-03-08T10:15:00Z",
   },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NAV ITEMS — static, labels don't change per-niche
+// SIDEBAR COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
-const NAV_BASE = [
-  { id: "inicio",   label: "Inicio",         icon: Home },
-  { id: "content",  label: "Mi Catálogo",    icon: ClipboardList },
-  { id: "fotos",    label: "Fotos",          icon: Images },
-  { id: "config",   label: "Configuración",  icon: Settings },
+const NAV = [
+  { id: "inicio",  label: "Inicio",             icon: Home },
+  { id: "content", label: "Editar Contenido",  icon: ClipboardList },
+  { id: "fotos",   label: "Fotos",             icon: Images },
+  { id: "config",  label: "Configuración",     icon: Settings },
+  { id: "negocio", label: "Mi Negocio",        icon: Store },
 ];
 
-// Tab extra solo para el cliente Rocha's
-const NAV_ROCHAS_EXTRA = { id: "negocio", label: "Mi Negocio", icon: Store };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SIDEBAR
-// ─────────────────────────────────────────────────────────────────────────────
 function Sidebar({ collapsed, setCollapsed, activePage, setActivePage, session }) {
   const accent = session?.accentColor ?? "#f59e0b";
-  const NAV = session?.username === "rochas"
-    ? [...NAV_BASE.slice(0, 2), NAV_ROCHAS_EXTRA, ...NAV_BASE.slice(2)]
-    : NAV_BASE;
 
   return (
-    <aside
-      className="relative flex flex-col shrink-0 bg-slate-900 border-r border-slate-800/60 transition-all duration-300 ease-in-out overflow-hidden"
-      style={{ width: collapsed ? 72 : 260 }}
-    >
-      {/* Top accent */}
-      <div className="absolute top-0 left-0 right-0 h-[2px]"
-        style={{ background: `linear-gradient(90deg, ${accent}, ${accent}99, ${accent})` }} />
+    <aside className="relative flex flex-col shrink-0 bg-slate-900 border-r border-slate-800/60 transition-all duration-300 ease-in-out overflow-hidden"
+      style={{ width: collapsed ? 72 : 260 }}>
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-amber-500 via-orange-400 to-amber-500 opacity-90" />
 
-      {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-6 border-b border-slate-800/60">
-        <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
-          style={{ background: `linear-gradient(135deg, ${accent}, ${accent}bb)`, boxShadow: `0 4px 14px ${accent}44` }}>
+        <div className="shrink-0 w-9 h-9 rounded-xl bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
           <Zap className="w-4 h-4 text-slate-900" strokeWidth={2.5} />
         </div>
         {!collapsed && (
@@ -249,7 +201,6 @@ function Sidebar({ collapsed, setCollapsed, activePage, setActivePage, session }
         </button>
       </div>
 
-      {/* Business card */}
       {session && (!collapsed ? (
         <div className="mx-4 mt-4 p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
           <div className="flex items-center gap-3">
@@ -258,7 +209,7 @@ function Sidebar({ collapsed, setCollapsed, activePage, setActivePage, session }
               {session.emoji}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-slate-200 font-semibold text-sm leading-none truncate">{session.businessName}</p>
+              <p className="text-slate-200 font-semibold text-sm leading-none truncate">{session.business_name || session.businessName}</p>
               <div className="flex items-center gap-1.5 mt-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" style={{ boxShadow: "0 0 6px #4ade80", animation: "pulse 2s infinite" }} />
                 <span className="text-emerald-400 text-xs font-medium">Sitio en vivo</span>
@@ -275,7 +226,6 @@ function Sidebar({ collapsed, setCollapsed, activePage, setActivePage, session }
         </div>
       ))}
 
-      {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1 mt-2">
         {!collapsed && (
           <p className="text-slate-600 text-[10px] font-bold uppercase tracking-widest px-3 pb-2">Navegación</p>
@@ -298,7 +248,6 @@ function Sidebar({ collapsed, setCollapsed, activePage, setActivePage, session }
         })}
       </nav>
 
-      {/* Domain */}
       {!collapsed && session && (
         <div className="mx-4 mb-3 px-3 py-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex items-center gap-2">
           <Globe className="w-3.5 h-3.5 shrink-0" style={{ color: accent }} />
@@ -308,7 +257,6 @@ function Sidebar({ collapsed, setCollapsed, activePage, setActivePage, session }
         </div>
       )}
 
-      {/* SSL badge */}
       {!collapsed && session && (
         <div className="mx-4 mb-3 px-3 py-2 rounded-xl bg-slate-800/40 border border-slate-700/40 flex items-center gap-2">
           <Shield className="w-3.5 h-3.5 shrink-0" style={{ color: session.ssl?.status === "active" ? "#4ade80" : "#f59e0b" }} />
@@ -318,7 +266,6 @@ function Sidebar({ collapsed, setCollapsed, activePage, setActivePage, session }
         </div>
       )}
 
-      {/* User */}
       <div className="p-3 border-t border-slate-800/60">
         <div className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all duration-200 hover:bg-slate-800"
           style={{ justifyContent: collapsed ? "center" : "flex-start" }}>
@@ -355,25 +302,97 @@ import RochasBusinessEditor   from "./RochasBusinessEditor";
 export default function DashboardLayout() {
   const [collapsed,  setCollapsed]  = useState(false);
   const [activePage, setActivePage] = useState("inicio");
-  
-  // 1. Nuevos estados para controlar la carga desde el navegador
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [userSession, setUserSession] = useState(null);
 
-  // 2. Lee el localStorage al momento de cargar
   useEffect(() => {
-    const savedUser = localStorage.getItem("JL_LOGGED_USER");
-    if (savedUser) {
-        setLoggedInUser(savedUser);
-    }
-    setLoading(false);
+    const loadUserSession = async () => {
+      const savedUser = localStorage.getItem("JL_LOGGED_USER");
+      if (!savedUser) {
+        setLoading(false);
+        return;
+      }
+
+      setLoggedInUser(savedUser);
+
+      // Intentar cargar desde Supabase primero
+      const supabaseData = await getClientByUsername(savedUser);
+      
+      if (supabaseData) {
+        // Cargar horarios desde Supabase
+        const schedulesData = await getSchedules(supabaseData.id);
+        const scheduleMap = {};
+        if (schedulesData && schedulesData.length > 0) {
+          schedulesData.forEach(s => {
+            scheduleMap[s.day_key] = {
+              t1: { open: s.t1_open || "", close: s.t1_close || "", active: s.t1_active ?? true },
+              t2: { open: s.t2_open || "", close: s.t2_close || "", active: s.t2_active ?? false },
+              closed: s.closed ?? false,
+            };
+          });
+        }
+
+        // Transformar datos de Supabase al formato esperado
+        const sessionData = {
+          id: supabaseData.id,
+          username: supabaseData.username,
+          businessName: supabaseData.business_name,
+          business_name: supabaseData.business_name,
+          emoji: supabaseData.emoji || "🏢",
+          domain: supabaseData.domain,
+          accentColor: supabaseData.accent_color || "#f59e0b",
+          tagline: supabaseData.tagline,
+          phone: supabaseData.phone,
+          emailContact: supabaseData.email_contact || "",
+          instagram: supabaseData.instagram,
+          facebook: supabaseData.facebook,
+          whatsapp: supabaseData.whatsapp,
+          address: supabaseData.address,
+          city: supabaseData.city,
+          googleMaps: supabaseData.google_maps_short,
+          googleMapsEmbed: supabaseData.google_maps_embed,
+          niche: supabaseData.niche,
+          plan: supabaseData.plan,
+          hero: {
+            badge: supabaseData.hero_badge || "",
+            title: supabaseData.hero_title || "",
+            titleHighlight: supabaseData.hero_title_highlight || "",
+            subtitle: supabaseData.hero_subtitle || "",
+          },
+          rating: {
+            score: supabaseData.rating_score || "9.2",
+            quote: supabaseData.rating_quote || "",
+            quoteBody: supabaseData.rating_quote_body || "",
+          },
+          rating_score: supabaseData.rating_score,
+          rating_quote: supabaseData.rating_quote,
+          rating_quote_body: supabaseData.rating_quote_body,
+          logo_url: supabaseData.logo_url || null,
+          hero_url: supabaseData.hero_url || null,
+          schedule: scheduleMap,
+          lastPublish: supabaseData.last_publish || supabaseData.updated_at,
+          // Fallback a mock si algunas propiedades faltan
+          ssl: { status: "active", issuer: "Cloudflare", expiresAt: "2026-12-01" },
+          cdn: { status: "active", provider: "Cloudflare", cacheHit: "90%" },
+        };
+        setUserSession(sessionData);
+      } else {
+        // Fallback a mock si Supabase falla
+        console.log("⚠️ No se pudo conectar a Supabase, usando datos mock");
+        const mockData = MOCK_AUTH_DB[savedUser];
+        if (mockData) {
+          setUserSession(mockData);
+        }
+      }
+
+      setLoading(false);
+    };
+
+    loadUserSession();
   }, []);
 
-  // 3. Muestra pantalla negra mientras lee el dato
   if (loading) return <div className="h-screen bg-slate-950"></div>;
-
-  // 4. Conecta el usuario leído con la base de datos
-  const userSession = MOCK_AUTH_DB[loggedInUser] ?? null;
 
   if (!userSession) {
     return (

@@ -135,43 +135,43 @@ on conflict (client_id, day_key) do nothing;
 
 
 -- Menu completo
-insert into menu_items (client_id, nombre, categoria, precio, descripcion, image_url, destacado, sort_order)
-select c.id, m.nombre, m.categoria, m.precio::numeric, m.descripcion, m.image_url, m.destacado::boolean, m.sort_order::int
+insert into menu_items (client_id, nombre, categoria, precio, descripcion, image_url, emoji, destacado, sort_order)
+select c.id, m.nombre, m.categoria, m.precio::numeric, m.descripcion, m.image_url, m.emoji, m.destacado::boolean, m.sort_order::int
 from clients c
 cross join (values
-  ('Lomito Americano',  'Lomitos',      '3500', 'Pan, lechuga, tomate, bife, cheddar, cebolla, huevo y panceta + papas fritas', 'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/SaveClip.App_369996308_18283054210122984_257038325478517335_n.jpg', 'true',  '1'),
-  ('Lomito Clasico',    'Lomitos',      '3000', 'Pan, lechuga, tomate, bife, jamon, queso, huevo + papas fritas',               'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/SaveClip.App_568508155_18189018340327863_7996907510168956897_n.jpg', 'false', '2'),
-  ('XL Completa',       'Hamburguesas', '3200', 'Pan, lechuga, tomate, medallon XL, jamon, queso, huevo + papas fritas',        'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/Hamburguesa-348-1-1024x1024.jpg',                                   'true',  '3'),
-  ('XL Americana',      'Hamburguesas', '3000', 'Pan, lechuga, tomate, cheddar, panceta, cebolla, huevo + papas fritas',        'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/Q2PIASNR4BD67KDXFWFX7C22LM.jpg',                                    'false', '4'),
-  ('Sandwich de mila',  'Milanesas',    '2800', 'Pan, lechuga, tomate, mila de ternera, jamon, queso, huevo + papas fritas',    'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/milanesa-italianajpg.jpg',                                           'false', '5'),
-  ('Mila Clasica',      'Milanesas',    '2800', 'Mila de ternera + guarnicion fritas/ensalada/pure',                            'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/milanesa-italianajpg.jpg',                                           'false', '6'),
-  ('Mila Napolitana',   'Milanesas',    '3000', 'Mila de ternera, salsa, oregano, muzza + guarnicion fritas/ensalada/pure',     'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/milanesa-a-la-napolitana-con-guarnicion-de-papas-VLWFAANIWBGPFO4CSUHS7RYVVQ.avif', 'true', '7'),
-  ('Mila Americana',    'Milanesas',    '3200', 'Mila de ternera, cheddar, panceta, cebolla, huevo + guarnicion',               'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/453452355_18189018340327863_7996907510168956897_n.jpg',               'false', '8'),
-  ('4 Quesos',          'Milanesas',    '2800', 'Mila de ternera, queso azul, tybo, muzza, provolone + guarnicion',             'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/pizza-4quesos-scaled.jpg',                                           'false', '9'),
-  ('Pizza Muzzarella',  'Pizzas',       '2500', 'Pizza con abundante queso muzzarella y piso crocante',                         'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/santo-bar-pizzas-1jpg.jpg',                                          'false', '10'),
-  ('Pizza Especial',    'Pizzas',       '2600', 'Salsa, jamon, muzza, tomates, aceitunas y oregano',                            'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/pizza-especial-salsa.jpg',                                           'true',  '11'),
-  ('Pizza Fugazzeta',   'Pizzas',       '2400', 'Salsa, muzza, cebolla caramelizada, oregano y aceitunas',                      'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/image-592.png',                                                      'false', '12'),
-  ('Pizza 4 Quesos',    'Pizzas',       '2800', 'Salsa, muzza, tybo, azul, cheddar, aceitunas y oregano',                      'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/pizza-4quesos-scaled.jpg',                                           'false', '13'),
-  ('Coca-Cola',         'Bebidas',       '800', 'Disponible: 500ml, 1L y 2.5L',                                                 'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/cocacola.jpg',                                                       'false', '14'),
-  ('Sprite',            'Bebidas',       '800', 'Disponible: 500ml y 2L',                                                       'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/sprite.jpg',                                                         'false', '15'),
-  ('Cerveza',           'Bebidas',      '1200', 'Disponible: Corona 330ml, Brahma 500ml y Cordoba 473ml',                       'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/2-Coronas.jpg',                                                      'false', '16')
-) as m(nombre, categoria, precio, descripcion, image_url, destacado, sort_order)
+  ('Lomito Americano',  'Lomitos',      '3500', 'Pan, lechuga, tomate, bife, cheddar, cebolla, huevo y panceta + papas fritas', 'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/SaveClip.App_369996308_18283054210122984_257038325478517335_n.jpg', '🥩', 'true',  '1'),
+  ('Lomito Clasico',    'Lomitos',      '3000', 'Pan, lechuga, tomate, bife, jamon, queso, huevo + papas fritas',               'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/SaveClip.App_568508155_18189018340327863_7996907510168956897_n.jpg', '🥩', 'false', '2'),
+  ('XL Completa',       'Hamburguesas', '3200', 'Pan, lechuga, tomate, medallon XL, jamon, queso, huevo + papas fritas',        'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/Hamburguesa-348-1-1024x1024.jpg',                                   '🍔', 'true',  '3'),
+  ('XL Americana',      'Hamburguesas', '3000', 'Pan, lechuga, tomate, cheddar, panceta, cebolla, huevo + papas fritas',        'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/Q2PIASNR4BD67KDXFWFX7C22LM.jpg',                                    '🍔', 'false', '4'),
+  ('Sandwich de mila',  'Milanesas',    '2800', 'Pan, lechuga, tomate, mila de ternera, jamon, queso, huevo + papas fritas',    'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/milanesa-italianajpg.jpg',                                           '🥪', 'false', '5'),
+  ('Mila Clasica',      'Milanesas',    '2800', 'Mila de ternera + guarnicion fritas/ensalada/pure',                            'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/milanesa-italianajpg.jpg',                                           '🍖', 'false', '6'),
+  ('Mila Napolitana',   'Milanesas',    '3000', 'Mila de ternera, salsa, oregano, muzza + guarnicion fritas/ensalada/pure',     'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/milanesa-a-la-napolitana-con-guarnicion-de-papas-VLWFAANIWBGPFO4CSUHS7RYVVQ.avif', '🍖', 'true', '7'),
+  ('Mila Americana',    'Milanesas',    '3200', 'Mila de ternera, cheddar, panceta, cebolla, huevo + guarnicion',               'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/453452355_18189018340327863_7996907510168956897_n.jpg',               '🍖', 'false', '8'),
+  ('4 Quesos',          'Milanesas',    '2800', 'Mila de ternera, queso azul, tybo, muzza, provolone + guarnicion',             'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/pizza-4quesos-scaled.jpg',                                           '🧀', 'false', '9'),
+  ('Pizza Muzzarella',  'Pizzas',       '2500', 'Pizza con abundante queso muzzarella y piso crocante',                         'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/santo-bar-pizzas-1jpg.jpg',                                          '🍕', 'false', '10'),
+  ('Pizza Especial',    'Pizzas',       '2600', 'Salsa, jamon, muzza, tomates, aceitunas y oregano',                            'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/pizza-especial-salsa.jpg',                                           '🍕', 'true',  '11'),
+  ('Pizza Fugazzeta',   'Pizzas',       '2400', 'Salsa, muzza, cebolla caramelizada, oregano y aceitunas',                      'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/image-592.png',                                                      '🍕', 'false', '12'),
+  ('Pizza 4 Quesos',    'Pizzas',       '2800', 'Salsa, muzza, tybo, azul, cheddar, aceitunas y oregano',                      'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/pizza-4quesos-scaled.jpg',                                           '🍕', 'false', '13'),
+  ('Coca-Cola',         'Bebidas',       '800', 'Disponible: 500ml, 1L y 2.5L',                                                 'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/cocacola.jpg',                                                       '🥤', 'false', '14'),
+  ('Sprite',            'Bebidas',       '800', 'Disponible: 500ml y 2L',                                                       'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/sprite.jpg',                                                         '🥤', 'false', '15'),
+  ('Cerveza',           'Bebidas',      '1200', 'Disponible: Corona 330ml, Brahma 500ml y Cordoba 473ml',                       'https://raw.githubusercontent.com/zzzJanozzz/Comida/main/2-Coronas.jpg',                                                      '🍺', 'false', '16')
+) as m(nombre, categoria, precio, descripcion, image_url, emoji, destacado, sort_order)
 where c.username = 'rochas'
 on conflict do nothing;
 
 
 -- Why cards
-insert into why_cards (client_id, title, description, sort_order)
-select c.id, w.title, w.description, w.sort_order::int
+insert into why_cards (client_id, emoji, title, description, sort_order)
+select c.id, w.emoji, w.title, w.description, w.sort_order::int
 from clients c
 cross join (values
-  ('Porciones abundantes',     'Nunca vas a quedar con hambre. Servimos como en casa, con la generosidad de siempre.',    '1'),
-  ('Precios justos',            'Comida rica y en cantidad no tiene por que ser cara. Asi lo entendemos nosotros.',         '2'),
-  ('Ingredientes frescos',      'Compramos y preparamos a diario. Sin congelados, sin atajos, el sabor se nota.',           '3'),
-  ('Sabor casero real',         'La receta de siempre, con el carino de siempre. Como lo hacia la abuela, pero listo para llevar.', '4'),
-  ('Listo rapido',              'Pedi por WhatsApp y pasa a buscarlo. Sin esperas largas ni sorpresas.',                    '5'),
-  ('En el barrio',              'Estamos en Villa Incor desde hace anos. Somos parte de la comunidad.',                     '6')
-) as w(title, description, sort_order)
+  ('🫙', 'Porciones abundantes',     'Nunca vas a quedar con hambre. Servimos como en casa, con la generosidad de siempre.',    '1'),
+  ('🪙', 'Precios justos',            'Comida rica y en cantidad no tiene por que ser cara. Asi lo entendemos nosotros.',         '2'),
+  ('🥬', 'Ingredientes frescos',      'Compramos y preparamos a diario. Sin congelados, sin atajos, el sabor se nota.',           '3'),
+  ('🏠', 'Sabor casero real',         'La receta de siempre, con el carino de siempre. Como lo hacia la abuela, pero listo para llevar.', '4'),
+  ('⚡', 'Listo rapido',              'Pedi por WhatsApp y pasa a buscarlo. Sin esperas largas ni sorpresas.',                    '5'),
+  ('📍', 'En el barrio',              'Estamos en Villa Incor desde hace anos. Somos parte de la comunidad.',                     '6')
+) as w(emoji, title, description, sort_order)
 where c.username = 'rochas'
 on conflict do nothing;
 

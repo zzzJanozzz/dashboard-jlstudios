@@ -1,99 +1,12 @@
 /**
- * rochas-data.ts
- * Datos iniciales de Rocha's Rotisería extraídos del HTML estático de la demo.
- * Fuente: https://github.com/zzzJanozzz/Comida/blob/main/index.html
- *
- * TODO: Reemplazar con lecturas reales de Supabase:
- *   const { data } = await supabase.from('clients').select('*').eq('username', 'rochas')
- *   const { data: items } = await supabase.from('menu_items').select('*').eq('client_id', rochasId)
+ * rochas-data.js
+ * Datos iniciales de Rocha's Rotisería.
+ * En producción, estos datos vienen de Supabase.
  */
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TIPOS
-// ─────────────────────────────────────────────────────────────────────────────
-
-export interface Turno {
-  open: string;
-  close: string;
-  active: boolean;
-}
-
-export interface DaySchedule {
-  t1: Turno;
-  t2: Turno;
-  closed: boolean;
-}
-
-export type WeekSchedule = Record<
-  "lun" | "mar" | "mié" | "jue" | "vie" | "sáb" | "dom",
-  DaySchedule
->;
-
-export interface MenuItem {
-  id: number;
-  nombre: string;
-  categoria: "Lomitos" | "Hamburguesas" | "Milanesas" | "Pizzas" | "Bebidas";
-  precio: string;
-  desc: string;
-  imageUrl: string;
-  destacado: boolean;
-  disponible: boolean;
-  activo: boolean;
-  emoji: string;
-}
-
-export interface WhyCard {
-  emoji: string;
-  title: string;
-  desc: string;
-}
-
-export interface HeroData {
-  badge: string;
-  title: string;
-  titleHighlight: string;
-  subtitle: string;
-  stats: { icon: string; label: string; value: string }[];
-}
-
-export interface RochasData {
-  // Identidad
-  businessName: string;
-  emoji: string;
-  tagline: string;
-
-  // Contacto
-  whatsapp: string;
-  instagram: string;
-  facebook: string;
-  address: string;
-  city: string;
-  googleMapsEmbed: string;
-  googleMapsShort: string;
-
-  // Hero
-  hero: HeroData;
-
-  // Horarios
-  schedule: WeekSchedule;
-
-  // Menú
-  menuItems: MenuItem[];
-
-  // Sección "Por qué elegirnos"
-  whyCards: WhyCard[];
-
-  // Rating
-  rating: { score: string; quote: string; quoteBody: string };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// DATOS REALES
-// ─────────────────────────────────────────────────────────────────────────────
 
 const BASE_IMG = "https://raw.githubusercontent.com/zzzJanozzz/Comida/main/";
 
-export const ROCHAS_DATA: RochasData = {
+export const ROCHAS_DATA = {
   businessName: "Rocha's Rotisería",
   emoji: "🍖",
   tagline: "Comida casera, abundante y a precios justos.",
@@ -103,16 +16,14 @@ export const ROCHAS_DATA: RochasData = {
   facebook: "",
   address: "Calle 3 755 (entre 14 y 16)",
   city: "Santa Rosa de Calamuchita, Córdoba",
-  googleMapsEmbed:
-    "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3384.8261485789093!2d-64.5370502!3d-32.0825436!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95d2bb4b13c80831%3A0x5e3f200d15bd900d!2sRocha's%20rotiseria!5e0!3m2!1ses!2sar!4v1709567490000",
+  googleMapsEmbed: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3384.8261485789093!2d-64.5370502!3d-32.0825436!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95d2bb4b13c80831%3A0x5e3f200d15bd900d!2sRocha's%20rotiseria!5e0!3m2!1ses!2sar!4v1709567490000",
   googleMapsShort: "https://maps.app.goo.gl/QmARWF93kgw1FR8C9",
 
   hero: {
     badge: "Santa Rosa de Calamuchita · Córdoba",
     title: "El sabor de casa,",
     titleHighlight: "listo para llevar.",
-    subtitle:
-      "Comida casera, abundante y a precios justos. Hacé tu pedido por WhatsApp y pasá a buscarlo en Calle 3 755.",
+    subtitle: "Comida casera, abundante y a precios justos. Hacé tu pedido por WhatsApp y pasá a buscarlo en Calle 3 755.",
     stats: [
       { icon: "⭐", value: "9.2", label: "puntuación local" },
       { icon: "📍", value: "Calle 3 755", label: "Villa Incor" },
@@ -123,15 +34,15 @@ export const ROCHAS_DATA: RochasData = {
   schedule: {
     lun: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
     mar: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
-    mié: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
+    mie: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
     jue: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
     vie: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
-    sáb: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
+    sab: { t1: { open: "11:30", close: "15:00", active: true  }, t2: { open: "20:30", close: "00:30", active: true  }, closed: false },
     dom: { t1: { open: "",      close: "",       active: false }, t2: { open: "",      close: "",       active: false }, closed: true  },
   },
 
   menuItems: [
-    { id: 1,  nombre: "Lomito Americano",  categoria: "Lomitos",      precio: "3500", desc: "Pan, lechuga, tomate, bife, cheddar, cebolla, huevo y panceta + papas fritas!!!",                    imageUrl: BASE_IMG + "SaveClip.App_369996308_18283054210122984_257038325478517335_n.jpg", destacado: true,  disponible: true,  activo: true,  emoji: "🥩" },
+    { id: 1,  nombre: "Lomito Americano",  categoria: "Lomitos",      precio: "3500", desc: "Pan, lechuga, tomate, bife, cheddar, cebolla, huevo y panceta + papas fritas!!!", imageUrl: BASE_IMG + "SaveClip.App_369996308_18283054210122984_257038325478517335_n.jpg", destacado: true,  disponible: true,  activo: true,  emoji: "🥩" },
     { id: 2,  nombre: "Lomito Clasico",    categoria: "Lomitos",      precio: "3000", desc: "Pan, lechuga, tomate, bife, jamon, queso, huevo + papas fritas!!!",                                   imageUrl: BASE_IMG + "SaveClip.App_568508155_18189018340327863_7996907510168956897_n.jpg", destacado: false, disponible: true,  activo: true,  emoji: "🥩" },
     { id: 3,  nombre: "XL Completa",       categoria: "Hamburguesas", precio: "3200", desc: "Pan, lechuga, tomate, medallon XL, jamon, queso, huevo + papas fritas!!!",                            imageUrl: BASE_IMG + "Hamburguesa-348-1-1024x1024.jpg",                                   destacado: true,  disponible: true,  activo: true,  emoji: "🍔" },
     { id: 4,  nombre: "XL Americana",      categoria: "Hamburguesas", precio: "3000", desc: "Pan, lechuga, tomate, cheddar, panceta, cebolla, huevo + papas fritas!!!",                            imageUrl: BASE_IMG + "Q2PIASNR4BD67KDXFWFX7C22LM.jpg",                                    destacado: false, disponible: true,  activo: true,  emoji: "🍔" },
@@ -161,7 +72,6 @@ export const ROCHAS_DATA: RochasData = {
   rating: {
     score: "9.2",
     quote: "La mejor relación calidad–precio de la zona",
-    quoteBody:
-      "Porciones generosas, precios justos y el sabor de la comida de siempre. Por eso nuestros clientes vuelven.",
+    quoteBody: "Porciones generosas, precios justos y el sabor de la comida de siempre. Por eso nuestros clientes vuelven.",
   },
 };

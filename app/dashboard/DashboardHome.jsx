@@ -97,7 +97,9 @@ function ActivityBadge({ type }) {
 // ─────────────────────────────────────────
 //  MAIN EXPORT
 // ─────────────────────────────────────────
-export default function DashboardHome({ businessName = "Tu Negocio", domain = "tu-negocio.surge.sh" }) {
+export default function DashboardHome({ session }) {
+  const businessName = session?.businessName || session?.business_name || "Tu Negocio";
+  const domain = session?.domain || "tu-negocio.surge.sh";
   const todayVisits = WEEK_TRAFFIC[WEEK_TRAFFIC.length - 1].visits;
   const todayClicks = WEEK_TRAFFIC[WEEK_TRAFFIC.length - 1].clicks;
 

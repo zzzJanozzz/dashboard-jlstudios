@@ -17,11 +17,11 @@ export default function Sidebar({ collapsed, setCollapsed, activePage, setActive
       style={{ width: collapsed ? 72 : 260 }}
     >
       {/* Top accent gradient */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-500 via-orange-400 to-amber-500 opacity-90" />
+      <div className="absolute top-0 left-0 right-0 h-0.5 bgbg-linear-to-rrom-amber-500 via-orange-400 to-amber-500 opacity-90" />
 
       {/* Logo area */}
       <div className="flex items-center gap-3 px-5 py-6 border-b border-slate-800/60">
-        <div className="shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
+        <div className="shrink-0 w-9 h-9 rounded-xl bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
           <Zap className="w-4 h-4 text-slate-900" strokeWidth={2.5} />
         </div>
         {!collapsed && (
@@ -45,7 +45,7 @@ export default function Sidebar({ collapsed, setCollapsed, activePage, setActive
       {!collapsed ? (
         <div className="mx-4 mt-4 p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-400 to-pink-600 flex items-center justify-center text-xl shrink-0">{emoji}</div>
+            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-rose-400 to-pink-600 flex items-center justify-center text-xl shrink-0">{emoji}</div>
             <div className="flex-1 min-w-0">
               <p className="text-slate-200 font-semibold text-sm leading-none truncate">{nombre}</p>
               <div className="flex items-center gap-1.5 mt-1.5">
@@ -57,7 +57,7 @@ export default function Sidebar({ collapsed, setCollapsed, activePage, setActive
         </div>
       ) : (
         <div className="flex justify-center mt-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-400 to-pink-600 flex items-center justify-center text-xl">{emoji}</div>
+          <div className="w-10 h-10 rounded-xl bg-linear-to-br from-rose-400 to-pink-600 flex items-center justify-center text-xl">{emoji}</div>
         </div>
       )}
 
@@ -118,7 +118,7 @@ export default function Sidebar({ collapsed, setCollapsed, activePage, setActive
           onMouseEnter={e => e.currentTarget.style.background = "#1e293b"}
           onMouseLeave={e => e.currentTarget.style.background = "transparent"}
         >
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+          <div className="w-8 h-8 rounded-full bg-linear-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
             {usuario.slice(0, 2).toUpperCase()}
           </div>
           {!collapsed && (

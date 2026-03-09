@@ -30,9 +30,10 @@
  *   await prisma.mediaAsset.upsert({ where: { clientId_slotKey: { clientId, slotKey: item.id } }, update: { url }, create: { clientId, slotKey, url, type: 'image' } })
  */
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Upload, Trash2, Globe, CheckCircle, ImageOff, RefreshCw, AlertTriangle } from "lucide-react";
 import { NICHE_SCHEMAS } from "./ContentManager";
+import { supabase, getAllMenuItems, getClientByUsername, uploadImage, extFromMime, updateClientMediaSlot, deleteStorageImage } from "@/src/lib/supabase";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NICHE-SPECIFIC FIXED SLOTS
@@ -67,37 +68,24 @@ const FIXED_SLOTS = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SIMULATED UPLOAD with stages (mimics real object-storage lifecycle)
+// REAL UPLOAD to Supabase Storage
 // ─────────────────────────────────────────────────────────────────────────────
-const simulateUpload = async (file, onProgress) => {
-  // Stage 1: request pre-signed URL from our API
-  // TODO: const { uploadUrl, publicUrl } = await fetch('/api/upload-url', {...}).then(r=>r.json())
-  onProgress({ stage: "requesting", pct: 10, message: "Obteniendo URL de subida..." });
-  await new Promise(r => setTimeout(r, 500));
+const realUpload = async (file, storagePath, onProgress) => {
+  onProgress({ stage: "uploading", pct: 20, message: "Subiendo a Supabase Storage..." });
 
-  // Stage 2: upload to object storage (R2 / S3)
-  // TODO: await fetch(uploadUrl, { method: 'PUT', body: file })
-  for (let p = 10; p <= 80; p += 10) {
-    onProgress({ stage: "uploading", pct: p, message: "Subiendo a Cloudflare R2..." });
-    await new Promise(r => setTimeout(r, 120));
-  }
+  const publicUrl = await uploadImage(storagePath, file);
 
-  // Stage 3: confirm & save URL to DB
-  // TODO: await fetch('/api/confirm-upload', { method: 'POST', body: JSON.stringify({ publicUrl, slotKey, clientId }) })
   onProgress({ stage: "saving", pct: 90, message: "Guardando en base de datos..." });
-  await new Promise(r => setTimeout(r, 400));
+  await new Promise(r => setTimeout(r, 200));
 
   onProgress({ stage: "done", pct: 100, message: "¡Listo!" });
-
-  // Return the local blob URL as a stand-in for the real CDN URL
-  // TODO: return publicUrl  ← the actual Cloudflare R2 / S3 URL
-  return URL.createObjectURL(file);
+  return publicUrl;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UPLOAD SLOT (single image slot with drag & drop)
 // ─────────────────────────────────────────────────────────────────────────────
-function UploadSlot({ slotKey, label, desc, currentUrl, accent, onUploaded, onRemove }) {
+function UploadSlot({ slotKey, label, desc, currentUrl, accent, onUploaded, onRemove, username }) {
   const [dragging,  setDragging]  = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress,  setProgress]  = useState(null);
@@ -112,7 +100,9 @@ function UploadSlot({ slotKey, label, desc, currentUrl, accent, onUploaded, onRe
     setError(null);
     setUploading(true);
     try {
-      const url = await simulateUpload(file, p => setProgress(p));
+      const ext = extFromMime(file.type);
+      const path = `${username}/${slotKey}.${ext}`;
+      const url = await realUpload(file, path, p => setProgress(p));
       onUploaded(slotKey, url);
     } catch (e) {
       setError("Error al subir. Intentá de nuevo.");
@@ -120,7 +110,7 @@ function UploadSlot({ slotKey, label, desc, currentUrl, accent, onUploaded, onRe
       setUploading(false);
       setProgress(null);
     }
-  }, [slotKey, onUploaded]);
+  }, [slotKey, onUploaded, username]);
 
   const hasImage = !!currentUrl;
 
@@ -185,8 +175,7 @@ function UploadSlot({ slotKey, label, desc, currentUrl, accent, onUploaded, onRe
               <div className="h-full rounded-full transition-all duration-200" style={{ width: `${progress.pct}%`, background: accent }} />
             </div>
             <p className="text-[10px] text-slate-700 mt-1">
-              {/* TODO: Replace with: Conectado a Cloudflare R2 → bucket: jlstudios-media */}
-              Simulando subida a Cloudflare R2 (conectar en producción)
+              Subiendo a Supabase Storage → bucket: media/{username}/
             </p>
           </div>
         )}
@@ -209,7 +198,7 @@ function UploadSlot({ slotKey, label, desc, currentUrl, accent, onUploaded, onRe
 // CATALOG ITEM PHOTO SLOT
 // For niche types where each catalog item has its own photo
 // ─────────────────────────────────────────────────────────────────────────────
-function ItemPhotoSlot({ item, accent, photoUrl, showWithoutPhoto, onUploaded, onToggleShow }) {
+function ItemPhotoSlot({ item, accent, photoUrl, showWithoutPhoto, onUploaded, onToggleShow, username }) {
   const [dragging,  setDragging]  = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress,  setProgress]  = useState(null);
@@ -219,13 +208,15 @@ function ItemPhotoSlot({ item, accent, photoUrl, showWithoutPhoto, onUploaded, o
     if (!file?.type.startsWith("image/")) return;
     setUploading(true);
     try {
-      const url = await simulateUpload(file, p => setProgress(p));
+      const ext = extFromMime(file.type);
+      const path = `${username}/items/${item.id}.${ext}`;
+      const url = await realUpload(file, path, p => setProgress(p));
       onUploaded(item.id, url);
     } finally {
       setUploading(false);
       setProgress(null);
     }
-  }, [item.id, onUploaded]);
+  }, [item.id, onUploaded, username]);
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex gap-0">
@@ -308,42 +299,148 @@ export default function MediaGallery({ session }) {
     setTimeout(() => setToast({ show: false, success: true, message: "" }), 3500);
   };
 
-  const handleSlotUploaded = (key, url) => {
+  // Items de Supabase
+  const [items, setItems] = useState([]);
+  const [loadingItems, setLoadingItems] = useState(true);
+  const [clientId, setClientId] = useState(session?.id || null);
+
+  // Resolver client ID
+  useEffect(() => {
+    const resolveClientId = async () => {
+      if (session?.id) {
+        setClientId(session.id);
+        return;
+      }
+      if (session?.username) {
+        console.log("🔍 [MediaGallery] session.id falta, buscando por username:", session.username);
+        const client = await getClientByUsername(session.username);
+        if (client?.id) {
+          setClientId(client.id);
+        } else {
+          setLoadingItems(false);
+        }
+      } else {
+        setLoadingItems(false);
+      }
+    };
+    resolveClientId();
+  }, [session?.id, session?.username]);
+
+  // Cargar items cuando clientId esté resuelto
+  useEffect(() => {
+    const loadItems = async () => {
+      try {
+        setLoadingItems(true);
+        const data = await getAllMenuItems(clientId);
+        setItems(data || []);
+        // Initialize itemPhotos from existing image URLs
+        const photos = {};
+        (data || []).forEach(item => {
+          if (item.imageUrl) photos[item.id] = item.imageUrl;
+        });
+        setItemPhotos(photos);
+        console.log("🖼️ Items cargados para galería:", data?.length);
+      } catch (error) {
+        console.error("Error cargando galería:", error);
+        showToast("Error al cargar las fotos", false);
+      } finally {
+        setLoadingItems(false);
+      }
+    };
+
+    if (clientId) loadItems();
+  }, [clientId]);
+
+  // Load saved fixed slot URLs from session (logo_url, hero_url from clients table)
+  useEffect(() => {
+    const saved = {};
+    if (session?.logo_url) saved.logo = session.logo_url;
+    if (session?.hero_url) saved.portada = session.hero_url;
+    if (Object.keys(saved).length > 0) setSlotPhotos(prev => ({ ...prev, ...saved }));
+  }, [session?.logo_url, session?.hero_url]);
+
+  const handleSlotUploaded = async (key, url) => {
     setSlotPhotos(p => ({ ...p, [key]: url }));
-    showToast(`✅ "${fixedSlots.find(s => s.key === key)?.label}" actualizada`);
+    // Persist logo/hero to clients table
+    try {
+      if (clientId && (key === 'logo' || key === 'portada')) {
+        await updateClientMediaSlot(clientId, key, url);
+      }
+      showToast(`✅ "${fixedSlots.find(s => s.key === key)?.label}" guardada en Supabase`);
+    } catch (error) {
+      console.error("Error guardando slot:", error);
+      showToast("❌ Error al guardar en BD", false);
+    }
   };
-  const handleSlotRemove   = (key) => setSlotPhotos(p => ({ ...p, [key]: null }));
-  const handleItemPhoto    = (id, url) => {
-    setItemPhotos(p => ({ ...p, [id]: url }));
-    if (url) showToast("✅ Foto del ítem actualizada");
+  const handleSlotRemove = async (key) => {
+    setSlotPhotos(p => ({ ...p, [key]: null }));
+    try {
+      // Delete from storage
+      const username = session?.username;
+      if (username) {
+        // Try common extensions
+        for (const ext of ['jpg', 'png', 'webp']) {
+          await deleteStorageImage(`${username}/${key}.${ext}`);
+        }
+      }
+      // Clear URL in clients table
+      if (clientId && (key === 'logo' || key === 'portada')) {
+        await updateClientMediaSlot(clientId, key, null);
+      }
+      showToast("✅ Foto eliminada");
+    } catch (error) {
+      console.error("Error eliminando foto:", error);
+    }
+  };
+  const handleItemPhoto = async (id, url) => {
+    try {
+      // If removing photo, also delete from storage
+      if (!url && session?.username) {
+        for (const ext of ['jpg', 'png', 'webp']) {
+          await deleteStorageImage(`${session.username}/items/${id}.${ext}`);
+        }
+      }
+
+      const { error } = await supabase
+        .from('menu_items')
+        .update({ image_url: url })
+        .eq('id', id)
+        .eq('client_id', clientId);
+
+      if (error) throw error;
+
+      setItemPhotos(p => ({ ...p, [id]: url }));
+      setItems(prev =>
+        prev.map(it => it.id === id ? { ...it, image_url: url, imageUrl: url } : it)
+      );
+
+      if (url) showToast("✅ Foto guardada en Supabase");
+      else showToast("✅ Foto eliminada");
+    } catch (error) {
+      console.error("Error guardando foto:", error);
+      showToast("❌ Error al guardar foto", false);
+    }
   };
   const handleToggleShow   = (id) => setShowNoPhoto(p => ({ ...p, [id]: !p[id] }));
 
   // Stats
   const filledSlots = Object.values(slotPhotos).filter(Boolean).length;
   const filledItems = Object.values(itemPhotos).filter(Boolean).length;
-  const totalItems  = schema.mockItems.length;
+  const totalItems  = items.length;
 
   // PUBLISH
   const handlePublish = async () => {
     setPublishing(true);
     try {
-      /**
-       * TODO: Real publish:
-       * const res = await fetch('/api/update-media', {
-       *   method: 'POST',
-       *   headers: { 'Content-Type': 'application/json' },
-       *   body: JSON.stringify({ clientId: session.username, slotPhotos, itemPhotos, showNoPhoto }),
-       * });
-       * if (!res.ok) throw new Error(await res.text());
-       *
-       * TODO: Inside /api/update-media:
-       *   1. Validate session
-       *   2. Upsert media assets table in DB
-       *   3. Flush Cloudflare cache for affected pages
-       *   4. Trigger ISR revalidation if using Next.js
-       */
-      await new Promise(r => setTimeout(r, 1800));
+      // Update last_publish timestamp in Supabase
+      const { error } = await supabase
+        .from('clients')
+        .update({ last_publish: new Date().toISOString() })
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      // TODO: Flush Cloudflare cache when CF API is configured
       showToast("✅ Galería publicada en tu sitio web en vivo");
     } catch (e) {
       showToast("❌ Error al publicar. Intentá de nuevo.", false);
@@ -351,6 +448,17 @@ export default function MediaGallery({ session }) {
       setPublishing(false);
     }
   };
+
+  if (loadingItems) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-950">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-slate-700 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-400">Cargando galería...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-slate-950 p-6 lg:p-8 pb-28">
@@ -366,7 +474,7 @@ export default function MediaGallery({ session }) {
           { label: "Slots fijos cubiertos",    value: `${filledSlots} / ${fixedSlots.length}`, color: accent },
           { label: "Ítems con foto",           value: `${filledItems} / ${totalItems}`,        color: "#94a3b8" },
           { label: "Pendientes de foto",       value: totalItems - filledItems,                color: "#f59e0b" },
-          { label: "Almacenamiento simulado",  value: "Cloudflare R2",                        color: "#4ade80" },
+          { label: "Almacenamiento",            value: "Supabase Storage",                     color: "#4ade80" },
         ].map(s => (
           <div key={s.label} className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3">
             <p className="text-slate-600 text-[10px] font-bold uppercase tracking-widest">{s.label}</p>
@@ -393,6 +501,7 @@ export default function MediaGallery({ session }) {
               accent={accent}
               onUploaded={handleSlotUploaded}
               onRemove={handleSlotRemove}
+              username={session.username}
             />
           ))}
         </div>
@@ -412,17 +521,16 @@ export default function MediaGallery({ session }) {
         <div className="flex items-start gap-3 p-4 bg-slate-900 border border-slate-800 rounded-xl mb-5">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-800 shrink-0 text-sm">☁️</div>
           <div>
-            <p className="text-slate-300 text-sm font-semibold">Almacenamiento en la nube</p>
+            <p className="text-slate-300 text-sm font-semibold">Almacenamiento en Supabase Storage</p>
             <p className="text-slate-600 text-xs mt-0.5">
-              Las fotos se suben directamente a <span className="text-slate-400 font-medium">Cloudflare R2</span> y se sirven
-              desde CDN global. El bucket <span className="text-slate-500 font-mono text-[10px]">jlstudios-media/{session.username}/</span> se configurará al activar tu plan.
-              {/* TODO: Link actual del bucket una vez configurado en Cloudflare Workers */}
+              Las fotos se suben a <span className="text-slate-400 font-medium">Supabase Storage</span> y se sirven
+              con URL públicas. Bucket: <span className="text-slate-500 font-mono text-[10px]">media/{session.username}/</span>
             </p>
           </div>
         </div>
 
         <div className="space-y-2">
-          {schema.mockItems.map(item => (
+          {items.map(item => (
             <ItemPhotoSlot
               key={item.id}
               item={item}
@@ -431,6 +539,7 @@ export default function MediaGallery({ session }) {
               showWithoutPhoto={showNoPhoto[item.id] ?? false}
               onUploaded={handleItemPhoto}
               onToggleShow={handleToggleShow}
+              username={session.username}
             />
           ))}
         </div>
@@ -459,7 +568,7 @@ export default function MediaGallery({ session }) {
             boxShadow: publishing ? "none" : `0 8px 32px ${accent}55`,
           }}>
           {publishing
-            ? <><div className="w-4 h-4 border-2 border-slate-700 border-t-transparent rounded-full animate-spin" /> Sincronizando con R2 y DB...</>
+            ? <><div className="w-4 h-4 border-2 border-slate-700 border-t-transparent rounded-full animate-spin" /> Sincronizando con Supabase...</>
             : <><Globe className="w-4 h-4" /> Guardar y Publicar Fotos</>
           }
         </button>

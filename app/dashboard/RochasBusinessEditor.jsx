@@ -14,9 +14,10 @@
  *   await supabase.from('clients').update({ rating_score, rating_quote, rating_quote_body }).eq('id', session.id)
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Trash2, GripVertical, Star, CheckCircle, AlertTriangle } from "lucide-react";
 import { ROCHAS_DATA } from "../../src/lib/rochas-data";
+import { supabase, getWhyCards } from "@/src/lib/supabase";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TOAST
@@ -88,10 +89,30 @@ function WhyCardRow({ card, index, accent, onChange, onDelete }) {
 export default function RochasBusinessEditor({ session }) {
   const accent = session.accentColor ?? "#ea580c";
 
-  // Why cards state
-  const [whyCards, setWhyCards] = useState(
-    session.whyCards ?? ROCHAS_DATA.whyCards
-  );
+  // Why cards state — loaded from Supabase on mount
+  const [whyCards, setWhyCards] = useState(ROCHAS_DATA.whyCards);
+  const [loadingCards, setLoadingCards] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!session?.id) { setLoadingCards(false); return; }
+      try {
+        const cards = await getWhyCards(session.id);
+        if (cards && cards.length > 0) {
+          setWhyCards(cards.map(c => ({
+            emoji: c.emoji || "✨",
+            title: c.title,
+            desc: c.description,
+          })));
+        }
+      } catch (e) {
+        console.error("[RochasBusinessEditor] Error loading why cards:", e);
+      } finally {
+        setLoadingCards(false);
+      }
+    };
+    load();
+  }, [session?.id]);
 
   // Rating state
   const [ratingScore,     setRatingScore]     = useState(session.rating?.score     ?? ROCHAS_DATA.rating.score);
@@ -121,20 +142,42 @@ export default function RochasBusinessEditor({ session }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      /**
-       * TODO: Replace simulation with real API call:
-       * const res = await fetch("/api/update-business", {
-       *   method: "POST",
-       *   headers: { "Content-Type": "application/json" },
-       *   body: JSON.stringify({
-       *     clientId: session.username,
-       *     whyCards,
-       *     rating: { score: ratingScore, quote: ratingQuote, quoteBody: ratingQuoteBody },
-       *   }),
-       * });
-       * if (!res.ok) throw new Error(await res.text());
-       */
-      await new Promise(r => setTimeout(r, 1200));
+      // 1. Update rating in clients table
+      const { error: ratingError } = await supabase
+        .from('clients')
+        .update({
+          rating_score: ratingScore,
+          rating_quote: ratingQuote,
+          rating_quote_body: ratingQuoteBody,
+        })
+        .eq('id', session.id);
+
+      if (ratingError) throw ratingError;
+
+      // 2. Replace why_cards: delete old, insert new
+      const { error: deleteError } = await supabase
+        .from('why_cards')
+        .delete()
+        .eq('client_id', session.id);
+
+      if (deleteError) throw deleteError;
+
+      if (whyCards.length > 0) {
+        const { error: insertError } = await supabase
+          .from('why_cards')
+          .insert(
+            whyCards.map((card, idx) => ({
+              client_id: session.id,
+              emoji: card.emoji,
+              title: card.title,
+              description: card.desc,
+              sort_order: idx,
+            }))
+          );
+
+        if (insertError) throw insertError;
+      }
+
       showToast("✅ Cambios guardados correctamente");
     } catch {
       showToast("❌ Error al guardar. Intentá de nuevo.", false);
@@ -219,7 +262,7 @@ export default function RochasBusinessEditor({ session }) {
                 <div className="text-orange-200 text-sm mt-1">★★★★★</div>
                 <div className="text-white/60 text-xs mt-0.5">Puntuación local promedio</div>
               </div>
-              <div className="flex-1 min-w-[200px]">
+              <div className="flex-1 min-w-50">
                 <p className="text-white font-semibold text-sm">"{ratingQuote || "Tu frase aquí"}"</p>
                 <p className="text-white/70 text-xs mt-1 line-clamp-2">{ratingQuoteBody}</p>
               </div>

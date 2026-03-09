@@ -10,8 +10,8 @@
  *   - Prisma:   const items = await prisma.menuItem.findMany({ where: { clientId: session.id } })
  */
 
-import { useState } from "react";
-import { ROCHAS_DATA } from "../../src/lib/rochas-data";
+import { useState, useEffect } from "react";
+import { supabase, getAllMenuItems, getClientByUsername } from "@/src/lib/supabase";
 import {
   Plus, Trash2, Edit3, Globe, CheckCircle, ChevronDown, Tag,
   Clock, User, Truck, Sparkles, Wrench, UtensilsCrossed, Dumbbell,
@@ -248,7 +248,7 @@ function ItemModal({ item, schema, accent, onSave, onClose }) {
       <div className="absolute inset-0 bg-black/75 backdrop-blur-md" onClick={onClose} />
       <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
         style={{ animation: "fadeIn .2s ease forwards" }}>
-        <div className="absolute top-0 left-0 right-0 h-[2px]"
+        <div className="absolute top-0 left-0 right-0 h-0.5"
           style={{ background: `linear-gradient(90deg, ${accent}, ${accent}77, ${accent})` }} />
 
         {/* Header */}
@@ -341,7 +341,7 @@ function ItemRow({ item, schema, accent, onEdit, onDelete, onToggleActive }) {
           </div>
           <div>
             <p className="text-slate-200 font-semibold text-sm">{item.nombre}</p>
-            {item.desc && <p className="text-slate-600 text-xs mt-0.5 truncate max-w-[200px]">{item.desc}</p>}
+            {item.desc && <p className="text-slate-600 text-xs mt-0.5 truncate max-w-50">{item.desc}</p>}
           </div>
         </div>
       </td>
@@ -398,17 +398,9 @@ export default function ContentManager({ session }) {
   const SchemaIcon = schema.Icon;
   const accent = session.accentColor;
 
-  // Use real Rocha's data when logged in as 'rochas'; fall back to generic mock for other clients
-  // TODO: replace with Supabase fetch: supabase.from('menu_items').select('*').eq('client_id', session.id)
-  const initialItems = session.username === "rochas"
-    ? ROCHAS_DATA.menuItems.map(item => ({
-        ...item,
-        precio: item.precio,
-        activo: item.activo,
-      }))
-    : schema.mockItems;
-
-  const [items,       setItems]       = useState(initialItems);
+  const [items,       setItems]       = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [syncing,     setSyncing]     = useState(false);
   const [filterCat,   setFilterCat]   = useState("Todos");
   const [editingItem, setEditingItem] = useState(null);
   const [publishing,  setPublishing]  = useState(false);
@@ -419,17 +411,168 @@ export default function ContentManager({ session }) {
     setTimeout(() => setToast({ show: false, success: true, message: "" }), 3500);
   };
 
-  // CRUD handlers
-  const handleSave = (updated) => {
-    if (updated.id) {
-      setItems(prev => prev.map(it => it.id === updated.id ? { ...it, ...updated } : it));
-    } else {
-      setItems(prev => [{ ...updated, id: Date.now() }, ...prev]);
+  // Resolver client ID (puede venir de session.id o buscarse por username)
+  const [clientId, setClientId] = useState(session?.id || null);
+
+  useEffect(() => {
+    const resolveClientId = async () => {
+      if (session?.id) {
+        setClientId(session.id);
+        return;
+      }
+      // Fallback: buscar por username si session.id no existe
+      if (session?.username) {
+        console.log("🔍 [ContentManager] session.id falta, buscando por username:", session.username);
+        const client = await getClientByUsername(session.username);
+        if (client?.id) {
+          setClientId(client.id);
+          console.log("✅ client_id resuelto:", client.id);
+        } else {
+          console.error("❌ No se pudo resolver client_id para:", session.username);
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+    resolveClientId();
+  }, [session?.id, session?.username]);
+
+  // Cargar items de Supabase al montar
+  useEffect(() => {
+    const loadItems = async () => {
+      try {
+        setLoading(true);
+        console.log("🔍 [ContentManager] Cargando items para clientId:", clientId);
+        const data = await getAllMenuItems(clientId);
+        setItems(data || []);
+        console.log("✅ Items cargados de Supabase:", data?.length);
+      } catch (error) {
+        console.error("❌ Error cargando items:", error);
+        showToast("Error al cargar el menú", false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (clientId) {
+      loadItems();
     }
-    setEditingItem(null);
+  }, [clientId]);
+
+  // CRUD handlers
+  const handleSave = async (updated) => {
+    try {
+      setSyncing(true);
+
+      if (!updated.id || typeof updated.id === 'number') {
+        // INSERT nuevo item
+        const { data, error } = await supabase
+          .from('menu_items')
+          .insert({
+            client_id: clientId,
+            nombre: updated.nombre,
+            categoria: updated.categoria,
+            precio: parseFloat(updated.precio),
+            descripcion: updated.desc,
+            image_url: updated.imageUrl || null,
+            emoji: updated.emoji || '✨',
+            activo: updated.activo !== false,
+            destacado: !!updated.destacado,
+            disponible: updated.disponible !== false,
+            sort_order: items.length + 1,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Recargar items para obtener IDs reales de BD
+        const fresh = await getAllMenuItems(clientId);
+        setItems(fresh);
+        showToast("✅ Item creado y guardado en la BD");
+      } else {
+        // UPDATE item existente
+        const { error } = await supabase
+          .from('menu_items')
+          .update({
+            nombre: updated.nombre,
+            categoria: updated.categoria,
+            precio: parseFloat(updated.precio),
+            descripcion: updated.desc,
+            image_url: updated.imageUrl,
+            emoji: updated.emoji,
+            activo: updated.activo,
+            destacado: updated.destacado,
+            disponible: updated.disponible,
+          })
+          .eq('id', updated.id)
+          .eq('client_id', clientId);
+
+        if (error) throw error;
+
+        // Actualizar estado local
+        setItems(prev =>
+          prev.map(it => it.id === updated.id ? { ...it, ...updated } : it)
+        );
+        showToast("✅ Cambios guardados en la BD");
+      }
+
+      setEditingItem(null);
+    } catch (error) {
+      console.error("Error guardando item:", error);
+      showToast("❌ Error al guardar. Intentá de nuevo.", false);
+    } finally {
+      setSyncing(false);
+    }
   };
-  const handleDelete      = (id) => setItems(prev => prev.filter(it => it.id !== id));
-  const handleToggleActive= (id) => setItems(prev => prev.map(it => it.id === id ? { ...it, activo: !it.activo } : it));
+
+  const handleDelete = async (id) => {
+    if (!confirm("¿Estás seguro de que querés eliminar este item?")) return;
+
+    try {
+      setSyncing(true);
+
+      const { error } = await supabase
+        .from('menu_items')
+        .delete()
+        .eq('id', id)
+        .eq('client_id', clientId);
+
+      if (error) throw error;
+
+      setItems(prev => prev.filter(it => it.id !== id));
+      showToast("✅ Item eliminado de la BD");
+    } catch (error) {
+      console.error("Error eliminando item:", error);
+      showToast("❌ Error al eliminar", false);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleToggleActive = async (id) => {
+    try {
+      const item = items.find(it => it.id === id);
+      if (!item) return;
+
+      const { error } = await supabase
+        .from('menu_items')
+        .update({ activo: !item.activo })
+        .eq('id', id)
+        .eq('client_id', clientId);
+
+      if (error) throw error;
+
+      setItems(prev =>
+        prev.map(it => it.id === id ? { ...it, activo: !it.activo } : it)
+      );
+    } catch (error) {
+      console.error("Error actualizando estado:", error);
+      showToast("❌ Error al actualizar", false);
+    }
+  };
+
   const openNew           = () => setEditingItem({ activo: true, disponible: true, emoji: "✨" });
   const openEdit          = (item) => setEditingItem({ ...item });
 
@@ -437,34 +580,15 @@ export default function ContentManager({ session }) {
   const handlePublish = async () => {
     setPublishing(true);
     try {
-      /**
-       * TODO: Replace this simulation with the real API call:
-       *
-       * const res = await fetch("/api/update-client-site", {
-       *   method: "POST",
-       *   headers: { "Content-Type": "application/json" },
-       *   body: JSON.stringify({
-       *     clientId: session.username,
-       *     niche:    session.niche,
-       *     items:    items,
-       *   }),
-       * });
-       * if (!res.ok) throw new Error(await res.text());
-       *
-       * TODO: Inside /api/update-client-site:
-       *   1. Validate session server-side (NextAuth / JWT)
-       *   2. await prisma.item.deleteMany({ where: { clientId } })
-       *      await prisma.item.createMany({ data: items.map(...) })
-       *      — OR — Supabase upsert
-       *   3. Flush Cloudflare Cache:
-       *      await fetch(`https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache`, {
-       *        method: 'POST', headers: { Authorization: `Bearer ${CF_TOKEN}` },
-       *        body: JSON.stringify({ purge_everything: true }),
-       *      });
-       *   4. Trigger Vercel/Cloudflare Pages revalidation if using ISR:
-       *      await res.revalidate(`/${session.domain}`)
-       */
-      await new Promise(r => setTimeout(r, 1800)); // ← remove when real fetch is in place
+      // Update last_publish timestamp in Supabase
+      const { error } = await supabase
+        .from('clients')
+        .update({ last_publish: new Date().toISOString() })
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      // TODO: Flush Cloudflare cache when CF API is configured
       showToast("✅ Cambios publicados en tu sitio web en vivo");
     } catch (err) {
       console.error("[ContentManager] Publish error:", err);
@@ -480,6 +604,17 @@ export default function ContentManager({ session }) {
 
   // Table extra columns (excluding categoryField which always shows)
   const extraCols = schema.extraColumns.filter(c => c !== schema.categoryField);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-950">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-slate-700 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-400">Cargando menú desde Supabase...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-slate-950 p-6 lg:p-8 pb-28">
@@ -579,7 +714,7 @@ export default function ContentManager({ session }) {
           onSave={handleSave} onClose={() => setEditingItem(null)} />
       )}
 
-      <FloatingPublishBtn onClick={handlePublish} loading={publishing} accent={accent} />
+      <FloatingPublishBtn onClick={handlePublish} loading={publishing || syncing} accent={accent} />
       <Toast show={toast.show} success={toast.success} message={toast.message} />
     </div>
   );
