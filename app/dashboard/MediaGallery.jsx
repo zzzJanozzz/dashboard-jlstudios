@@ -41,10 +41,8 @@ import { supabase, getAllMenuItems, getClientByUsername, uploadImage, extFromMim
 // ─────────────────────────────────────────────────────────────────────────────
 const FIXED_SLOTS = {
   gastronomia: [
-    { key: "fachada",   label: "Foto de Fachada / Local",     desc: "Foto exterior del local, usada en la página de inicio." },
-    { key: "salon",     label: "Interior del Salón",          desc: "Ambiente del salón. Aparece en la sección 'Quiénes Somos'." },
     { key: "logo",      label: "Logo del Negocio",            desc: "PNG con fondo transparente, mínimo 512x512px." },
-    { key: "portada",   label: "Foto de Portada (Hero)",      desc: "Imagen principal de la web, 1920x1080px ideal." },
+    { key: "portada",   label: "Foto de Portada (Hero)",      desc: "Imagen de fondo del hero en la web, 1920x1080px ideal." },
   ],
   gimnasio: [
     { key: "fachada",   label: "Foto de Fachada / Entrada",   desc: "Vista exterior del gimnasio." },
