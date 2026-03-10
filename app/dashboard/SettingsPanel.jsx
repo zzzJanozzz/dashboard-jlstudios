@@ -386,13 +386,22 @@ export default function SettingsPanel({ session }) {
           <FormInput label="Badge / Ubicación" value={heroBadge} onChange={setHeroBadge}
             placeholder="Santa Rosa de Calamuchita · Córdoba" icon={MapPin}
             hint="Aparece arriba del título principal." />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormInput label="Título (línea 1)" value={heroTitle} onChange={setHeroTitle}
-              placeholder="El sabor de casa," icon={Globe} />
-            <FormInput label="Título destacado (línea 2)" value={heroTitleHighlight} onChange={setHeroTitleHighlight}
-              placeholder="listo para llevar." icon={Globe}
-              hint="Esta línea aparece con el color de tu marca." />
+          <div>
+            <label className="flex items-center gap-1 text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-2">
+              Título principal
+            </label>
+            <textarea value={heroTitle} onChange={e => setHeroTitle(e.target.value)}
+              placeholder={"El sabor\nde casa,\nlisto para llevar."}
+              rows={3}
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-200 text-sm focus:outline-none transition-all duration-200 placeholder-slate-600 resize-none"
+              onFocus={e => { e.target.style.borderColor = "#f59e0b66"; }}
+              onBlur={e => { e.target.style.borderColor = "#334155"; }}
+            />
+            <p className="text-slate-700 text-xs mt-1">Usá Enter para saltos de línea. El texto completo del título grande.</p>
           </div>
+          <FormInput label="Palabra(s) a resaltar" value={heroTitleHighlight} onChange={setHeroTitleHighlight}
+            placeholder="casa," icon={Globe}
+            hint="Esta palabra aparece con el estilo destacado de tu marca (debe estar contenida en el título)." />
           <FormInput label="Subtítulo / Descripción" value={heroSubtitle} onChange={setHeroSubtitle}
             placeholder="Comida casera, abundante y a precios justos..." icon={Globe}
             hint="Frase corta debajo del título. Máximo 2 líneas." />

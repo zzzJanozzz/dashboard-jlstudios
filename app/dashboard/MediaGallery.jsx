@@ -188,7 +188,7 @@ function UploadSlot({ slotKey, label, desc, currentUrl, accent, onUploaded, onRe
         )}
 
         <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
-          onChange={e => processFile(e.target.files?.[0])} />
+          onChange={e => { processFile(e.target.files?.[0]); e.target.value=''; }} />
       </div>
     </div>
   );
@@ -251,7 +251,7 @@ function ItemPhotoSlot({ item, accent, photoUrl, showWithoutPhoto, onUploaded, o
             <span className="text-[10px] mt-1" style={{ color: dragging ? accent : "#334155" }}>Subir</span>
           </div>
         )}
-        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={e => processFile(e.target.files?.[0])} />
+        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={e => { processFile(e.target.files?.[0]); e.target.value=''; }} />
       </div>
 
       {/* Show without photo toggle */}
