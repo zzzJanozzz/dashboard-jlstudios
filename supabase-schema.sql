@@ -85,6 +85,19 @@ create table if not exists why_cards (
   sort_order  integer not null default 0
 );
 
+create table if not exists page_events (
+  id          uuid primary key default gen_random_uuid(),
+  client_id   uuid not null references clients(id) on delete cascade,
+  event_type  text not null,
+  source      text default 'direct',
+  device      text default 'desktop',
+  page_path   text default '/',
+  created_at  timestamptz default now()
+);
+
+create index if not exists idx_pe_client_created on page_events(client_id, created_at desc);
+create index if not exists idx_pe_client_type    on page_events(client_id, event_type);
+
 -- =============================================================================
 -- DATOS DE ROCHAS
 -- ON CONFLICT DO NOTHING = si ya existe, no hace nada, no tira error
