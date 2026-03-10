@@ -9,6 +9,7 @@
  */
 
 import { useState, createContext, useContext, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Home, ClipboardList, Images, Settings, ChevronLeft, LogOut, Globe, Zap, Shield, Store } from "lucide-react";
 import { getClientByUsername, getSchedules } from "@/src/lib/supabase";
 
@@ -300,6 +301,7 @@ import SettingsPanel          from "./SettingsPanel";
 import RochasBusinessEditor   from "./RochasBusinessEditor";
 
 export default function DashboardLayout() {
+  const router = useRouter();
   const [collapsed,  setCollapsed]  = useState(false);
   const [activePage, setActivePage] = useState("inicio");
   const [loggedInUser, setLoggedInUser] = useState(null);
@@ -310,7 +312,7 @@ export default function DashboardLayout() {
     const loadUserSession = async () => {
       const savedUser = localStorage.getItem("JL_LOGGED_USER");
       if (!savedUser) {
-        setLoading(false);
+        router.replace('/');
         return;
       }
 
