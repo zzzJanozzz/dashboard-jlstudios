@@ -1,135 +1,117 @@
-# Guia de deploy — Rocha's Rotiseria
+# Guía de deploy — Rocha's Rotisería (Actualizado)
 
-Esta guia es para cuando el cliente te pague y quieras dejar todo funcionando en produccion. Por ahora el CMS funciona con datos de prueba (mock). Cuando llegue el momento, seguis estos pasos en orden.
-
----
-
-## Tu situacion actual (DEMO)
-
-- El CMS corre localmente o en Gitpod
-- Los datos estan hardcodeados en el codigo (no hay base de datos real todavia)
-- La pagina del local (repo Comida) es un HTML estatico en GitHub
-- No hay dominio comprado todavia
-- No hay deploy en Cloudflare Pages todavia
-
-**Esto esta bien.** Podes mostrarle el CMS al cliente como demo sin necesidad de nada de lo de abajo.
+Estado actual: El CMS está 100% conectado a Supabase y listo para producción.
 
 ---
 
-## Cuando el cliente te pague: pasos en orden
-
-### PASO 1 — Crear la base de datos en Supabase (gratis)
-
-1. Entra a https://supabase.com y crea una cuenta (es gratis)
-2. Haz clic en **New Project**
-3. Nombre: `jlstudios-cms` | Region: **South America (Sao Paulo)** | guarda la contrasena
-4. Espera 2 minutos a que se cree el proyecto
-5. En el menu de la izquierda, haz clic en **SQL Editor**
-6. Copia todo el contenido del archivo `supabase-schema.sql` de este repo y pegalo ahi
-7. Haz clic en **Run** (boton verde)
-8. Si dice "Success", listo. Las tablas y los datos de Rocha's ya estan cargados
-
-> Si ya ejecutaste el SQL antes y te tira error de "duplicate key", no pasa nada.
-> El script usa ON CONFLICT DO NOTHING — podes ejecutarlo multiples veces sin problema.
-
----
-
-### PASO 2 — Subir el CMS a Cloudflare Pages (gratis)
-
-Cloudflare Pages es donde va a vivir el panel de control (el CMS).
-
-1. Entra a https://cloudflare.com y crea una cuenta (es gratis)
-2. Dashboard de Cloudflare → **Workers & Pages** → **Create application** → **Pages** → **Connect to Git**
-3. Conecta tu cuenta de GitHub y selecciona el repo `dashboard-jlstudios`
-4. Configuracion del build:
-   - Framework preset: **Next.js**
-   - Build command: `npm run build`
-   - Output directory: `.next`
-5. Haz clic en **Save and Deploy**
-6. Cloudflare te da una URL tipo `dashboard-jlstudios.pages.dev` — esa es la URL del CMS
-
----
-
-### PASO 3 — Subir la pagina del local a Cloudflare Pages
-
-La pagina de Rocha's (el HTML estatico del repo `Comida`) tambien va en Cloudflare Pages, como proyecto separado.
-
-1. En Cloudflare Pages, crea otra aplicacion
-2. Conecta el repo `Comida` de GitHub
-3. Framework preset: **None** (es HTML estatico)
-4. Build command: (dejarlo vacio)
-5. Output directory: `/`
-6. Deploy → te da una URL tipo `rochas-comida.pages.dev`
-
----
-
-### PASO 4 — Comprar el dominio en Spaceship
-
-1. Entra a https://spaceship.com
-2. Busca el dominio que quiera el cliente (ej: `rochasrotiseria.com`)
-3. Compralo (cuesta aprox USD 10-15 por ano)
-4. En el panel de Spaceship, busca **DNS / Nameservers**
-5. Cambia los nameservers a los de Cloudflare (Cloudflare te los da cuando agregas el dominio)
-
----
-
-### PASO 5 — Conectar el dominio
-
-En Cloudflare:
-1. Agrega el dominio en **Websites** → **Add a site**
-2. Sigue los pasos para verificar que sos el dueno
-3. En la pagina del local (repo Comida), anda a **Custom domains** y agrega `rochasrotiseria.com`
-4. Para el CMS, usa un subdominio: `cms.rochasrotiseria.com`
-
-El SSL (candado verde) lo activa Cloudflare automaticamente.
-
----
-
-### PASO 6 — Conectar el CMS con la base de datos
-
-Este es el unico paso tecnico que requiere tocar codigo. Cuando llegue el momento, avisame y lo hacemos juntos. En resumen:
-
-1. En Supabase → **Settings → API**, copiar:
-   - Project URL (algo como `https://abcdef.supabase.co`)
-   - anon public key (una clave larga)
-2. En Cloudflare Pages, en la configuracion del CMS, agregar esas dos variables de entorno
-3. Cambiar el codigo del CMS para que lea de Supabase en lugar de los datos hardcodeados
-
----
-
-## Resumen visual
+## Arquitectura actual
 
 ```
-AHORA (demo):
-  Tu compu / Gitpod → CMS con datos mock → mostras al cliente
-
-CUANDO TE PAGUEN:
-  GitHub (codigo) → Cloudflare Pages → CMS en cms.rochasrotiseria.com
-  GitHub (codigo) → Cloudflare Pages → Pagina en rochasrotiseria.com
-  Supabase (base de datos) ← el CMS lee y escribe aca
-  Spaceship (dominio) → apunta a Cloudflare
+GitHub (dashboard-jlstudios)  →  Vercel        →  CMS en cms.rochasrotiseria.com
+GitHub (Comida)                →  Cloudflare    →  Página en rochasrotiseria.com
+Supabase (BD + Storage)        ←  ambos leen/escriben acá
+Spaceship (dominio)            →  DNS apunta a Cloudflare
 ```
 
 ---
 
-## Costos estimados
+## PASO 1 — Deploying el CMS en Vercel
+
+El CMS es una app Next.js. Vercel es el hosting ideal.
+
+1. Entrá a https://vercel.com e iniciá sesión con tu cuenta de GitHub
+2. Hacé clic en **"Add New..." → Project**
+3. Importá el repo: `zzzJanozzz/dashboard-jlstudios`
+4. En **Framework Preset**, elegí: **Next.js**
+5. Hacé clic en **Environment Variables** y agregá estas dos:
+
+   | Variable                          | Valor                                                |
+   |-----------------------------------|------------------------------------------------------|
+   | `NEXT_PUBLIC_SUPABASE_URL`        | `https://pupnmwaydhycxqgodsqa.supabase.co`           |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY`   | `sb_publishable_flOKWX7GPyX0S9LBBEZrfA_j3bvPLOc`    |
+
+6. En **Root Directory**, dejá vacío (raíz del repo)
+7. En **Build Command**, dejá el default: `next build`
+8. En **Git Branch**, seleccioná: `feature/rochas-client-setup`
+9. Hacé clic en **Deploy**
+10. Esperá ~2 minutos. Vercel te da una URL tipo `dashboard-jlstudios-xxxx.vercel.app`
+
+### Conectar dominio personalizado (opcional)
+
+Si querés que el CMS esté en `cms.rochasrotiseria.com`:
+1. En Vercel → **Settings → Domains** → agregar `cms.rochasrotiseria.com`
+2. En Cloudflare DNS, agregar un registro CNAME:
+   - Nombre: `cms`
+   - Destino: `cname.vercel-dns.com`
+   - Proxy: **DNS only** (nube gris, no naranja)
+
+---
+
+## PASO 2 — Página pública en Cloudflare Pages
+
+La página de Rocha's (repo `Comida`, HTML estático) ya está en Cloudflare Pages con dominio `rochasrotiseria.com`.
+
+Si necesitás re-deployar:
+1. Pusheá los cambios al repo `Comida` en GitHub
+2. Cloudflare Pages detecta el push y re-deploya automáticamente
+3. O hacé deploy manual desde el dashboard de Cloudflare Pages
+
+---
+
+## PASO 3 — Migración de BD (si ya tenés data)
+
+Si ya ejecutaste el `supabase-schema.sql` antes de los últimos cambios, corré esto en el **SQL Editor** de Supabase:
+
+```sql
+-- Agregar columnas nuevas si no existen
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS logo_url text;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS hero_url text;
+
+-- Corregir datos del hero para Rochas
+UPDATE clients
+SET hero_title = E'El sabor\nde casa,\nlisto para llevar.',
+    hero_title_highlight = 'casa,'
+WHERE username = 'rochas';
+```
+
+---
+
+## Variables de entorno
+
+| Variable                        | Dónde se usa | Valor                                              |
+|---------------------------------|--------------|----------------------------------------------------|
+| `NEXT_PUBLIC_SUPABASE_URL`      | CMS (Vercel) | `https://pupnmwaydhycxqgodsqa.supabase.co`         |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | CMS (Vercel) | `sb_publishable_flOKWX7GPyX0S9LBBEZrfA_j3bvPLOc`  |
+
+La página pública (`index.html`) tiene las claves hardcodeadas en el `<script>` ya que es un HTML estático sin build step.
+
+---
+
+## Costos
 
 | Servicio            | Costo                              |
 |---------------------|------------------------------------|
-| Supabase            | Gratis (hasta 500MB)               |
+| Supabase            | Gratis (hasta 500MB BD + 1GB Storage) |
+| Vercel (CMS)        | Gratis (hasta 100GB bandwidth/mes) |
 | Cloudflare Pages    | Gratis (hasta 500 deploys/mes)     |
-| Dominio .com        | ~USD 10-15 por ano (en Spaceship)  |
-| Total primer ano    | ~USD 10-15                         |
+| Dominio .com        | ~USD 10-15 por año (Spaceship)     |
+| **Total**           | **~USD 10-15 por año**             |
 
 ---
 
-## Preguntas frecuentes
+## Flujo de edición del cliente
 
-**El cliente puede editar el menu sin saber programar?**
-Si. Una vez conectado Supabase, cuando el cliente hace clic en "Guardar" en el CMS, los cambios se guardan en la base de datos y la pagina se actualiza.
+1. El cliente entra al CMS (`cms.rochasrotiseria.com`)
+2. Inicia sesión con usuario `rochas`
+3. Edita menú, fotos, horarios, hero, etc.
+4. Hace clic en **Guardar** → se guarda en Supabase al instante
+5. El visitante entra a `rochasrotiseria.com` → la página carga los datos frescos de Supabase
 
-**Necesito saber de servidores?**
-No. Cloudflare Pages y Supabase son servicios gestionados. Vos solo subis el codigo.
+**No hace falta re-deployar nada.** Los cambios son en tiempo real porque la página lee de Supabase en cada visita.
 
-**Puedo usar el mismo CMS para otros clientes?**
-Si. El CMS ya esta preparado para multiples clientes. Cada uno tiene su usuario y contrasena, y solo ve sus propios datos.
+---
+
+## Re-deploy automático
+
+- **CMS**: Cada push a `feature/rochas-client-setup` en GitHub → Vercel re-deploya automáticamente
+- **Página pública**: Cada push al repo `Comida` en GitHub → Cloudflare re-deploya automáticamente
