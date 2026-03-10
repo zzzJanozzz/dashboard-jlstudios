@@ -6,11 +6,12 @@
  * — there is no UI to change it. Each client only ever sees their own schema.
  *
  * TODO: Replace MOCK_ITEMS with real DB reads:
- *   - Supabase: const { data } = await supabase.from('items').select('*').eq('client_id', session.id)
- *   - Prisma:   const items = await prisma.item.findMany({ where: { clientId: session.id } })
+ *   - Supabase: const { data } = await supabase.from('menu_items').select('*').eq('client_id', session.id)
+ *   - Prisma:   const items = await prisma.menuItem.findMany({ where: { clientId: session.id } })
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase, getAllMenuItems, getClientByUsername } from "@/src/lib/supabase";
 import {
   Plus, Trash2, Edit3, Globe, CheckCircle, ChevronDown, Tag,
   Clock, User, Truck, Sparkles, Wrench, UtensilsCrossed, Dumbbell,
@@ -34,20 +35,21 @@ export const NICHE_SCHEMAS = {
     priceField:    "precio",
     fields: [
       { key: "nombre",    label: "Nombre del plato",   type: "text",     required: true,  placeholder: "Ej: Pizza Margarita" },
-      { key: "categoria", label: "Categoría",          type: "select",   required: true,  options: ["Entradas", "Pizzas", "Pastas", "Carnes", "Postres", "Bebidas", "Combos"] },
-      { key: "precio",    label: "Precio",             type: "price",    required: true,  placeholder: "0.00",  mono: true },
+      { key: "categoria", label: "Categoría",          type: "select",   required: true,  options: ["Lomitos", "Hamburguesas", "Milanesas", "Pizzas", "Bebidas", "Entradas", "Postres", "Combos"] },
+      { key: "precio",    label: "Precio ($)",         type: "price",    required: true,  placeholder: "0.00",  mono: true },
       { key: "desc",      label: "Descripción",        type: "textarea", required: false, placeholder: "Ingredientes, alérgenos, etc." },
-      { key: "delivery",  label: "Disponible en delivery", type: "toggle", required: false },
+      { key: "imageUrl",  label: "URL de la foto",     type: "text",     required: false, placeholder: "https://... (Supabase Storage o GitHub raw)" },
       { key: "destacado", label: "Plato destacado (badge en la web)", type: "toggle", required: false },
       { key: "disponible",label: "Disponible hoy",    type: "toggle",   required: false },
     ],
-    extraColumns: ["categoria", "delivery"],
+    extraColumns: ["categoria"],
+    // Items genéricos de demo (se usan para otros clientes de nicho gastronomia)
     mockItems: [
-      { id: 1, nombre: "Pizza Margarita", categoria: "Pizzas",   precio: "8500",  desc: "Tomate artesanal, mozzarella fresca, albahaca.", delivery: true,  destacado: true,  disponible: true,  emoji: "🍕", activo: true  },
-      { id: 2, nombre: "Empanada de Carne", categoria: "Entradas", precio: "1800", desc: "Masa a mano, carne a cuchillo, aceitunas.",     delivery: true,  destacado: false, disponible: true,  emoji: "🥟", activo: true  },
-      { id: 3, nombre: "Tiramisú Casero",  categoria: "Postres",  precio: "4200",  desc: "Mascarpone importado, bizcochuelo de amaretto.", delivery: false, destacado: false, disponible: false, emoji: "🍰", activo: false },
-      { id: 4, nombre: "Limonada Natural", categoria: "Bebidas",  precio: "2100",  desc: "Exprimida al momento, menta fresca.",            delivery: true,  destacado: false, disponible: true,  emoji: "🍋", activo: true  },
-      { id: 5, nombre: "Combo Familiar",   categoria: "Combos",   precio: "18900", desc: "2 pizzas grandes + 1.5L de bebida.",             delivery: true,  destacado: true,  disponible: true,  emoji: "🎉", activo: true  },
+      { id: 1, nombre: "Pizza Margarita",   categoria: "Pizzas",   precio: "8500",  desc: "Tomate artesanal, mozzarella fresca, albahaca.", imageUrl: "", destacado: true,  disponible: true,  emoji: "🍕", activo: true  },
+      { id: 2, nombre: "Empanada de Carne", categoria: "Entradas", precio: "1800",  desc: "Masa a mano, carne a cuchillo, aceitunas.",      imageUrl: "", destacado: false, disponible: true,  emoji: "🥟", activo: true  },
+      { id: 3, nombre: "Tiramisú Casero",   categoria: "Postres",  precio: "4200",  desc: "Mascarpone importado, bizcochuelo de amaretto.", imageUrl: "", destacado: false, disponible: false, emoji: "🍰", activo: false },
+      { id: 4, nombre: "Limonada Natural",  categoria: "Bebidas",  precio: "2100",  desc: "Exprimida al momento, menta fresca.",            imageUrl: "", destacado: false, disponible: true,  emoji: "🍋", activo: true  },
+      { id: 5, nombre: "Combo Familiar",    categoria: "Combos",   precio: "18900", desc: "2 pizzas grandes + 1.5L de bebida.",             imageUrl: "", destacado: true,  disponible: true,  emoji: "🎉", activo: true  },
     ],
   },
 
@@ -191,6 +193,27 @@ function FieldInput({ field, value, onChange, accent }) {
     );
   }
 
+  if (field.type === "combo") {
+    const datalistId = `field-options-${field.key}`;
+    return (
+      <>
+        <input
+          list={datalistId}
+          type="text"
+          value={value ?? ""}
+          placeholder={field.placeholder}
+          onChange={e => onChange(e.target.value)}
+          onFocus={e => Object.assign(e.target.style, focusStyle)} onBlur={e => { e.target.style.borderColor = "#334155"; e.target.style.boxShadow = "none"; }}
+          className={base}
+          required={field.required}
+        />
+        <datalist id={datalistId}>
+          {field.options.map(o => <option key={o} value={o} />)}
+        </datalist>
+      </>
+    );
+  }
+
   if (field.type === "select") {
     return (
       <select value={value ?? ""} onChange={e => onChange(e.target.value)}
@@ -232,14 +255,25 @@ function FieldInput({ field, value, onChange, accent }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // EDIT / CREATE MODAL
 // ─────────────────────────────────────────────────────────────────────────────
-function ItemModal({ item, schema, accent, onSave, onClose }) {
+function ItemModal({ item, schema, accent, categoryOptions, onSave, onClose }) {
   const isNew = !item.id;
   const [form, setForm] = useState({ ...item });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
+  const categoryFieldKey = schema.categoryField;
+  const normalizedFields = schema.fields.map(field => {
+    if (field.key !== categoryFieldKey) return field;
+    return {
+      ...field,
+      type: "combo",
+      options: categoryOptions,
+      placeholder: field.placeholder ?? "Escribí una categoría nueva o elegí una existente",
+    };
+  });
+
   // Separate toggle fields from regular fields for layout
-  const regularFields = schema.fields.filter(f => f.type !== "toggle");
-  const toggleFields  = schema.fields.filter(f => f.type === "toggle");
+  const regularFields = normalizedFields.filter(f => f.type !== "toggle");
+  const toggleFields  = normalizedFields.filter(f => f.type === "toggle");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -273,7 +307,7 @@ function ItemModal({ item, schema, accent, onSave, onClose }) {
             </div>
             <div className="flex-1">
               <label className="block text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-2">Nombre *</label>
-              <FieldInput field={schema.fields.find(f => f.key === "nombre")} value={form.nombre} onChange={v => set("nombre", v)} accent={accent} />
+              <FieldInput field={normalizedFields.find(f => f.key === "nombre")} value={form.nombre} onChange={v => set("nombre", v)} accent={accent} />
             </div>
           </div>
 
@@ -323,11 +357,24 @@ function ItemRow({ item, schema, accent, onEdit, onDelete, onToggleActive }) {
     <tr className="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors group">
       <td className="px-4 py-3.5">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-lg shrink-0">{item.emoji}</div>
+          {item.imageUrl ? (
+            <img
+              src={item.imageUrl}
+              alt={item.nombre}
+              className="w-10 h-10 rounded-lg object-cover shrink-0 border border-slate-700"
+              onError={e => { e.currentTarget.style.display = "none"; e.currentTarget.nextSibling.style.display = "flex"; }}
+            />
+          ) : null}
+          <div
+            className="w-10 h-10 rounded-lg bg-slate-800 items-center justify-center text-lg shrink-0"
+            style={{ display: item.imageUrl ? "none" : "flex" }}
+          >
+            {item.emoji}
+          </div>
           <div>
             <p className="text-slate-200 font-semibold text-sm">{item.nombre}</p>
-          
-          </div>  {item.desc && <p className="text-slate-600 text-xs mt-0.5 truncate max-w-50">{item.desc}</p>}
+            {item.desc && <p className="text-slate-600 text-xs mt-0.5 truncate max-w-50">{item.desc}</p>}
+          </div>
         </div>
       </td>
       <td className="px-4 py-3.5">
@@ -383,7 +430,9 @@ export default function ContentManager({ session }) {
   const SchemaIcon = schema.Icon;
   const accent = session.accentColor;
 
-  const [items,       setItems]       = useState(schema.mockItems);
+  const [items,       setItems]       = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [syncing,     setSyncing]     = useState(false);
   const [filterCat,   setFilterCat]   = useState("Todos");
   const [editingItem, setEditingItem] = useState(null);
   const [publishing,  setPublishing]  = useState(false);
@@ -394,17 +443,171 @@ export default function ContentManager({ session }) {
     setTimeout(() => setToast({ show: false, success: true, message: "" }), 3500);
   };
 
-  // CRUD handlers
-  const handleSave = (updated) => {
-    if (updated.id) {
-      setItems(prev => prev.map(it => it.id === updated.id ? { ...it, ...updated } : it));
-    } else {
-      setItems(prev => [{ ...updated, id: Date.now() }, ...prev]);
+  // Resolver client ID (puede venir de session.id o buscarse por username)
+  const [clientId, setClientId] = useState(session?.id || null);
+
+  useEffect(() => {
+    const resolveClientId = async () => {
+      if (session?.id) {
+        setClientId(session.id);
+        return;
+      }
+      // Fallback: buscar por username si session.id no existe
+      if (session?.username) {
+        console.log("🔍 [ContentManager] session.id falta, buscando por username:", session.username);
+        const client = await getClientByUsername(session.username);
+        if (client?.id) {
+          setClientId(client.id);
+          console.log("✅ client_id resuelto:", client.id);
+        } else {
+          console.error("❌ No se pudo resolver client_id para:", session.username);
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+    resolveClientId();
+  }, [session?.id, session?.username]);
+
+  // Cargar items de Supabase al montar
+  useEffect(() => {
+    const loadItems = async () => {
+      try {
+        setLoading(true);
+        console.log("🔍 [ContentManager] Cargando items para clientId:", clientId);
+        const data = await getAllMenuItems(clientId);
+        setItems(data || []);
+        console.log("✅ Items cargados de Supabase:", data?.length);
+      } catch (error) {
+        console.error("❌ Error cargando items:", error);
+        showToast("Error al cargar el menú", false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (clientId) {
+      loadItems();
     }
-    setEditingItem(null);
+  }, [clientId]);
+
+  // CRUD handlers
+  const handleSave = async (updated) => {
+    try {
+      setSyncing(true);
+
+      const normalizedCategory = (updated[schema.categoryField] ?? "").trim();
+      const normalizedPrice = updated[schema.priceField];
+
+      if (!updated.id || typeof updated.id === 'number') {
+        // INSERT nuevo item
+        const { data, error } = await supabase
+          .from('menu_items')
+          .insert({
+            client_id: clientId,
+            nombre: updated.nombre,
+            categoria: normalizedCategory,
+            precio: parseFloat(normalizedPrice),
+            descripcion: updated.desc,
+            image_url: updated.imageUrl || null,
+            emoji: updated.emoji || '✨',
+            activo: updated.activo !== false,
+            destacado: !!updated.destacado,
+            disponible: updated.disponible !== false,
+            sort_order: items.length + 1,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Recargar items para obtener IDs reales de BD
+        const fresh = await getAllMenuItems(clientId);
+        setItems(fresh);
+        showToast("✅ Item creado y guardado en la BD");
+      } else {
+        // UPDATE item existente
+        const { error } = await supabase
+          .from('menu_items')
+          .update({
+            nombre: updated.nombre,
+            categoria: normalizedCategory,
+            precio: parseFloat(normalizedPrice),
+            descripcion: updated.desc,
+            image_url: updated.imageUrl,
+            emoji: updated.emoji,
+            activo: updated.activo,
+            destacado: updated.destacado,
+            disponible: updated.disponible,
+          })
+          .eq('id', updated.id)
+          .eq('client_id', clientId);
+
+        if (error) throw error;
+
+        // Actualizar estado local
+        setItems(prev =>
+          prev.map(it => it.id === updated.id ? { ...it, ...updated } : it)
+        );
+        showToast("✅ Cambios guardados en la BD");
+      }
+
+      setEditingItem(null);
+    } catch (error) {
+      console.error("Error guardando item:", error);
+      showToast("❌ Error al guardar. Intentá de nuevo.", false);
+    } finally {
+      setSyncing(false);
+    }
   };
-  const handleDelete      = (id) => setItems(prev => prev.filter(it => it.id !== id));
-  const handleToggleActive= (id) => setItems(prev => prev.map(it => it.id === id ? { ...it, activo: !it.activo } : it));
+
+  const handleDelete = async (id) => {
+    if (!confirm("¿Estás seguro de que querés eliminar este item?")) return;
+
+    try {
+      setSyncing(true);
+
+      const { error } = await supabase
+        .from('menu_items')
+        .delete()
+        .eq('id', id)
+        .eq('client_id', clientId);
+
+      if (error) throw error;
+
+      setItems(prev => prev.filter(it => it.id !== id));
+      showToast("✅ Item eliminado de la BD");
+    } catch (error) {
+      console.error("Error eliminando item:", error);
+      showToast("❌ Error al eliminar", false);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleToggleActive = async (id) => {
+    try {
+      const item = items.find(it => it.id === id);
+      if (!item) return;
+
+      const { error } = await supabase
+        .from('menu_items')
+        .update({ activo: !item.activo })
+        .eq('id', id)
+        .eq('client_id', clientId);
+
+      if (error) throw error;
+
+      setItems(prev =>
+        prev.map(it => it.id === id ? { ...it, activo: !it.activo } : it)
+      );
+    } catch (error) {
+      console.error("Error actualizando estado:", error);
+      showToast("❌ Error al actualizar", false);
+    }
+  };
+
   const openNew           = () => setEditingItem({ activo: true, disponible: true, emoji: "✨" });
   const openEdit          = (item) => setEditingItem({ ...item });
 
@@ -412,34 +615,15 @@ export default function ContentManager({ session }) {
   const handlePublish = async () => {
     setPublishing(true);
     try {
-      /**
-       * TODO: Replace this simulation with the real API call:
-       *
-       * const res = await fetch("/api/update-client-site", {
-       *   method: "POST",
-       *   headers: { "Content-Type": "application/json" },
-       *   body: JSON.stringify({
-       *     clientId: session.username,
-       *     niche:    session.niche,
-       *     items:    items,
-       *   }),
-       * });
-       * if (!res.ok) throw new Error(await res.text());
-       *
-       * TODO: Inside /api/update-client-site:
-       *   1. Validate session server-side (NextAuth / JWT)
-       *   2. await prisma.item.deleteMany({ where: { clientId } })
-       *      await prisma.item.createMany({ data: items.map(...) })
-       *      — OR — Supabase upsert
-       *   3. Flush Cloudflare Cache:
-       *      await fetch(`https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache`, {
-       *        method: 'POST', headers: { Authorization: `Bearer ${CF_TOKEN}` },
-       *        body: JSON.stringify({ purge_everything: true }),
-       *      });
-       *   4. Trigger Vercel/Cloudflare Pages revalidation if using ISR:
-       *      await res.revalidate(`/${session.domain}`)
-       */
-      await new Promise(r => setTimeout(r, 1800)); // ← remove when real fetch is in place
+      // Update last_publish timestamp in Supabase
+      const { error } = await supabase
+        .from('clients')
+        .update({ last_publish: new Date().toISOString() })
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      // TODO: Flush Cloudflare cache when CF API is configured
       showToast("✅ Cambios publicados en tu sitio web en vivo");
     } catch (err) {
       console.error("[ContentManager] Publish error:", err);
@@ -449,12 +633,26 @@ export default function ContentManager({ session }) {
     }
   };
 
-  const cats = ["Todos", ...(schema.fields.find(f => f.key === schema.categoryField)?.options ?? [])];
+  const baseCategoryOptions = schema.fields.find(f => f.key === schema.categoryField)?.options ?? [];
+  const dbCategoryOptions = [...new Set(items.map(i => i[schema.categoryField]).filter(Boolean))];
+  const categoryOptions = [...new Set([...baseCategoryOptions, ...dbCategoryOptions])].sort((a, b) => a.localeCompare(b, "es"));
+  const cats = ["Todos", ...categoryOptions];
   const filtered = filterCat === "Todos" ? items : items.filter(it => it[schema.categoryField] === filterCat);
   const activeCount = items.filter(i => i.activo).length;
 
   // Table extra columns (excluding categoryField which always shows)
   const extraCols = schema.extraColumns.filter(c => c !== schema.categoryField);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-950">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-slate-700 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-400">Cargando menú desde Supabase...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-slate-950 p-6 lg:p-8 pb-28">
@@ -550,8 +748,7 @@ export default function ContentManager({ session }) {
 
       {/* Modal */}
       {editingItem && (
-        <ItemModal item={editingItem} schema={schema} accent={accent}
-          onSave={handleSave} onClose={() => setEditingItem(null)} />
+        <ItemModal item={editingItem} schema={schema} accent={accent} categoryOptions={categoryOptions} onSave={handleSave} onClose={() => setEditingItem(null)} />
       )}
 
       <FloatingPublishBtn onClick={handlePublish} loading={publishing} accent={accent} />

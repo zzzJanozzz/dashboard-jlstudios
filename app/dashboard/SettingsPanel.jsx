@@ -25,12 +25,13 @@ import {
   MessageSquare, Mail, Eye, EyeOff, Lock, RefreshCw, ExternalLink,
   Zap, Server,
 } from "lucide-react";
+import { supabase } from "@/src/lib/supabase";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DAYS OF WEEK
 // ─────────────────────────────────────────────────────────────────────────────
-const DAYS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"];
-const DAY_LABELS = { lun: "Lunes", mar: "Martes", mié: "Miércoles", jue: "Jueves", vie: "Viernes", sáb: "Sábado", dom: "Domingo" };
+const DAYS = ["lun", "mar", "mie", "jue", "vie", "sab", "dom"];
+const DAY_LABELS = { lun: "Lunes", mar: "Martes", mie: "Miércoles", jue: "Jueves", vie: "Viernes", sab: "Sábado", dom: "Domingo" };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VALIDATION HELPERS
@@ -43,6 +44,16 @@ const validateWhatsApp = (v) => {
 const validateURL = (v) => {
   if (!v) return true; // optional
   try { new URL(v); return true; } catch { return false; }
+};
+
+const validateEmbedURL = (v) => {
+  if (!v) return true; // optional
+  try {
+    const u = new URL(v);
+    return u.hostname.includes("google") || u.hostname.includes("maps");
+  } catch {
+    return false;
+  }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -134,7 +145,7 @@ function MaintenanceModal({ isOn, onConfirm, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/75 backdrop-blur-md" onClick={onClose} />
       <div className="relative w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden text-center p-8">
-        <div className="absolute top-0 left-0 right-0 h-[2px]"
+        <div className="absolute top-0 left-0 right-0 h-0.5"
           style={{ background: isOn ? "linear-gradient(90deg,#4ade80,#22d3ee)" : "linear-gradient(90deg,#f97316,#ef4444)" }} />
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
           style={{ background: isOn ? "rgba(74,222,128,.1)" : "rgba(249,115,22,.1)" }}>
@@ -167,10 +178,16 @@ export default function SettingsPanel({ session }) {
 
   // ── NOTIFICATIONS ──
   const [notifEmail,       setNotifEmail]      = useState(session.emailContact ?? "");
-  const [notifGmail,       setNotifGmail]       = useState(true);
-  const [notifWeekly,      setNotifWeekly]      = useState(true);
-  const [notifVisitAlert,  setNotifVisitAlert]  = useState(false);
-  const [notifWA,          setNotifWA]          = useState(true);
+  const [notifGmail,       setNotifGmail]       = useState(session.notifications?.gmail ?? true);
+  const [notifWeekly,      setNotifWeekly]      = useState(session.notifications?.weekly ?? true);
+  const [notifVisitAlert,  setNotifVisitAlert]  = useState(session.notifications?.visitAlert ?? false);
+  const [notifWA,          setNotifWA]          = useState(session.notifications?.whatsapp ?? true);
+
+  // ── HERO ──
+  const [heroBadge,          setHeroBadge]          = useState(session.hero?.badge          ?? "");
+  const [heroTitle,          setHeroTitle]          = useState(session.hero?.title          ?? "");
+  const [heroTitleHighlight, setHeroTitleHighlight] = useState(session.hero?.titleHighlight ?? "");
+  const [heroSubtitle,       setHeroSubtitle]       = useState(session.hero?.subtitle       ?? "");
 
   // ── BUSINESS DATA ──
   const [phone,        setPhone]        = useState(session.phone ?? "");
@@ -178,12 +195,32 @@ export default function SettingsPanel({ session }) {
   const [instagram,    setInstagram]    = useState(session.instagram ?? "");
   const [facebook,     setFacebook]     = useState(session.facebook ?? "");
   const [googleMaps,   setGoogleMaps]   = useState(session.googleMaps ?? "");
+  const [googleMapsEmbed, setGoogleMapsEmbed] = useState(session.googleMapsEmbed ?? "");
   const [address,      setAddress]      = useState(session.address ?? "");
+  const [city,         setCity]         = useState(session.city ?? "");
 
   // ── SCHEDULE ──
   const [schedule, setSchedule] = useState(session.schedule ?? {});
-  const setDayField = (day, field, value) => {
-    setSchedule(prev => ({ ...prev, [day]: { ...prev[day], [field]: value } }));
+
+  // Update a field inside a specific turno (t1 or t2) or the top-level closed flag
+  const setDayField = (day, turno, field, value) => {
+    setSchedule(prev => {
+      const current = prev[day] ?? {
+        t1: { open: "09:00", close: "18:00", active: true  },
+        t2: { open: "",      close: "",       active: false },
+        closed: false,
+      };
+      if (turno === "closed") {
+        return { ...prev, [day]: { ...current, closed: value } };
+      }
+      return {
+        ...prev,
+        [day]: {
+          ...current,
+          [turno]: { ...current[turno], [field]: value },
+        },
+      };
+    });
   };
 
   // ── MAINTENANCE ──
@@ -214,6 +251,9 @@ export default function SettingsPanel({ session }) {
     if (googleMaps && !validateURL(googleMaps)) {
       e.googleMaps = "Debe ser una URL válida (https://maps.google.com/...)";
     }
+    if (googleMapsEmbed && !validateEmbedURL(googleMapsEmbed)) {
+      e.googleMapsEmbed = "Pegá un link válido de Google Maps Embed (https://www.google.com/maps/embed?...).";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -230,40 +270,63 @@ export default function SettingsPanel({ session }) {
         clientId:    session.username,
         emailContact: notifEmail,
         notifications: { gmail: notifGmail, weekly: notifWeekly, visitAlert: notifVisitAlert, whatsapp: notifWA },
-        phone, whatsapp, instagram, facebook, googleMaps, address,
+        hero: { badge: heroBadge, title: heroTitle, titleHighlight: heroTitleHighlight, subtitle: heroSubtitle },
+        phone, whatsapp, instagram, facebook, googleMaps, googleMapsEmbed, address, city,
         schedule,
         maintenance,
       };
 
-      /**
-       * TODO: Replace simulation with real API call:
-       *
-       * const res = await fetch("/api/update-settings", {
-       *   method: "POST",
-       *   headers: { "Content-Type": "application/json" },
-       *   body: JSON.stringify(payload),
-       * });
-       * if (!res.ok) throw new Error(await res.text());
-       *
-       * TODO: Inside /api/update-settings:
-       *   1. Validate JWT / NextAuth session to confirm client owns this record
-       *   2. Validate payload with Zod:
-       *      const schema = z.object({ clientId: z.string(), email: z.string().email(), ... })
-       *      schema.parse(payload)
-       *   3. Write to DB:
-       *      await prisma.client.update({ where: { username: payload.clientId }, data: { ...payload } })
-       *      — OR — Supabase:
-       *      await supabase.from('clients').update(payload).eq('username', payload.clientId)
-       *   4. Flush Cloudflare cache for this client's zone:
-       *      await fetch(`https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache`, {
-       *        method: 'POST',
-       *        headers: { Authorization: `Bearer ${CF_TOKEN}`, 'Content-Type': 'application/json' },
-       *        body: JSON.stringify({ purge_everything: true }),
-       *      });
-       *   5. Return { ok: true, publishedAt: new Date() }
-       */
-      await new Promise(r => setTimeout(r, 1800)); // ← remove when real fetch is in place
-      console.log("[SettingsPanel] Payload ready for API:", payload);
+      // 1. Update clients table
+      const { error: clientError } = await supabase
+        .from('clients')
+        .update({
+          email_contact: notifEmail,
+          notif_gmail: notifGmail,
+          notif_weekly: notifWeekly,
+          notif_visit_alert: notifVisitAlert,
+          notif_whatsapp: notifWA,
+          hero_badge: heroBadge,
+          hero_title: heroTitle,
+          hero_title_highlight: heroTitleHighlight,
+          hero_subtitle: heroSubtitle,
+          phone,
+          whatsapp,
+          instagram,
+          facebook,
+          google_maps_short: googleMaps,
+          google_maps_embed: googleMapsEmbed,
+          address,
+          city,
+        })
+        .eq('id', session.id);
+
+      if (clientError) throw clientError;
+
+      // 2. Upsert schedules
+      const DAYS_KEYS = ["lun", "mar", "mie", "jue", "vie", "sab", "dom"];
+      for (const dayKey of DAYS_KEYS) {
+        const d = schedule[dayKey] ?? {
+          t1: { open: "11:30", close: "15:00", active: true },
+          t2: { open: "20:30", close: "00:30", active: true },
+          closed: false,
+        };
+        const { error: schedError } = await supabase
+          .from('schedules')
+          .upsert({
+            client_id: session.id,
+            day_key: dayKey,
+            closed: d.closed ?? false,
+            t1_open: d.t1?.open || null,
+            t1_close: d.t1?.close || null,
+            t1_active: d.t1?.active ?? true,
+            t2_open: d.t2?.open || null,
+            t2_close: d.t2?.close || null,
+            t2_active: d.t2?.active ?? false,
+          }, { onConflict: 'client_id,day_key' });
+        if (schedError) throw schedError;
+      }
+
+      console.log("[SettingsPanel] Saved to Supabase:", payload);
       showToast("✅ Configuración guardada y aplicada en tu sitio");
     } catch (err) {
       console.error("[SettingsPanel] Save error:", err);
@@ -318,8 +381,34 @@ export default function SettingsPanel({ session }) {
           </div>
         </div>
 
-        {/* ── 2. NOTIFICATIONS ── */}
-        <SectionCard title="Notificaciones" subtitle="Configurá a qué correo llegan los avisos" icon={Bell} accent="#60a5fa">
+        {/* ── 2. HERO ── */}
+        <SectionCard title="Portada del Sitio (Hero)" subtitle="El texto principal que ven tus clientes al entrar" icon={Zap} accent={accent}>
+          <FormInput label="Badge / Ubicación" value={heroBadge} onChange={setHeroBadge}
+            placeholder="Santa Rosa de Calamuchita · Córdoba" icon={MapPin}
+            hint="Aparece arriba del título principal." />
+          <div>
+            <label className="flex items-center gap-1 text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-2">
+              Título principal
+            </label>
+            <textarea value={heroTitle} onChange={e => setHeroTitle(e.target.value)}
+              placeholder={"El sabor\nde casa,\nlisto para llevar."}
+              rows={3}
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-200 text-sm focus:outline-none transition-all duration-200 placeholder-slate-600 resize-none"
+              onFocus={e => { e.target.style.borderColor = "#f59e0b66"; }}
+              onBlur={e => { e.target.style.borderColor = "#334155"; }}
+            />
+            <p className="text-slate-700 text-xs mt-1">Usá Enter para saltos de línea. El texto completo del título grande.</p>
+          </div>
+          <FormInput label="Palabra(s) a resaltar" value={heroTitleHighlight} onChange={setHeroTitleHighlight}
+            placeholder="casa," icon={Globe}
+            hint="Esta palabra aparece con el estilo destacado de tu marca (debe estar contenida en el título)." />
+          <FormInput label="Subtítulo / Descripción" value={heroSubtitle} onChange={setHeroSubtitle}
+            placeholder="Comida casera, abundante y a precios justos..." icon={Globe}
+            hint="Frase corta debajo del título. Máximo 2 líneas." />
+        </SectionCard>
+
+        {/* ── 3. NOTIFICATIONS ── */}
+        <SectionCard title="Notificaciones" subtitle="Dejá listo qué avisos va a usar tu CMS cuando el sitio esté conectado en producción" icon={Bell} accent="#60a5fa">
           <FormInput
             label="Email para recibir notificaciones"
             value={notifEmail}
@@ -331,6 +420,8 @@ export default function SettingsPanel({ session }) {
             error={errors.notifEmail}
             hint="Las alertas del sitio, reportes y avisos llegarán aquí."
           />
+          <Divider />
+          <ToggleRow label="Notificaciones por email activas" description="Si lo apagás, el correo queda guardado pero no se usarán avisos por mail" checked={notifGmail} onChange={setNotifGmail} color="#60a5fa" />
           <Divider />
           <ToggleRow label="Resumen semanal" description="Cada lunes: visitas, clics y actividad de la semana" checked={notifWeekly} onChange={setNotifWeekly} color="#60a5fa" />
           <Divider />
@@ -344,7 +435,7 @@ export default function SettingsPanel({ session }) {
           )}
         </SectionCard>
 
-        {/* ── 3. CONTACT & SOCIAL DATA ── */}
+        {/* ── 4. CONTACT & SOCIAL DATA ── */}
         <SectionCard title="Datos de Contacto y Redes" subtitle="Aparecen en tu sitio web y en la sección de contacto" icon={Globe} accent={accent}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormInput label="Teléfono de contacto" value={phone} onChange={setPhone}
@@ -375,44 +466,111 @@ export default function SettingsPanel({ session }) {
             error={errors.googleMaps}
             hint="El botón 'Cómo llegar' en tu sitio usará este enlace."
           />
-          <FormInput label="Dirección física" value={address} onChange={setAddress}
-            placeholder="Av. Colón 1234, Córdoba" icon={MapPin} />
+          <FormInput
+            label="Google Maps Embed (iframe)"
+            value={googleMapsEmbed}
+            onChange={setGoogleMapsEmbed}
+            placeholder="https://www.google.com/maps/embed?pb=..."
+            icon={MapPin}
+            error={errors.googleMapsEmbed}
+            hint="Pegá el link del iframe. Se usa para mostrar el mapa dentro de tu web."
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormInput label="Dirección física" value={address} onChange={setAddress}
+              placeholder="Calle 3 755 (entre 14 y 16)" icon={MapPin} />
+            <FormInput label="Ciudad / Localidad" value={city} onChange={setCity}
+              placeholder="Santa Rosa de Calamuchita, Córdoba" icon={MapPin} />
+          </div>
         </SectionCard>
 
-        {/* ── 4. SCHEDULE ── */}
-        <SectionCard title="Horarios de Atención" subtitle="Se muestran en el footer y la sección de contacto" icon={Clock} accent={accent}>
-          <div className="space-y-2">
+        {/* ── 5. SCHEDULE ── */}
+        <SectionCard title="Horarios de Atención" subtitle="Cada día puede tener hasta dos turnos (ej: mediodía y noche)" icon={Clock} accent={accent}>
+          <div className="space-y-3">
             {DAYS.map(day => {
-              const d = schedule[day] ?? { open: "09:00", close: "18:00", closed: false };
+              const d = schedule[day] ?? {
+                t1: { open: "09:00", close: "18:00", active: true  },
+                t2: { open: "",      close: "",       active: false },
+                closed: false,
+              };
               return (
-                <div key={day} className="flex items-center gap-3 flex-wrap">
-                  <div className="w-24 shrink-0">
-                    <span className={`text-sm font-semibold ${d.closed ? "text-slate-600 line-through" : "text-slate-300"}`}>
+                <div key={day} className="rounded-xl border border-slate-800 bg-slate-800/30 p-3">
+                  {/* Day header */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-sm font-bold w-24 ${d.closed ? "text-slate-600 line-through" : "text-slate-200"}`}>
                       {DAY_LABELS[day]}
                     </span>
+                    <div className="flex items-center gap-2">
+                      <Toggle checked={!d.closed} onChange={v => setDayField(day, "closed", "closed", !v)} color={accent} />
+                      <span className="text-xs text-slate-500">{d.closed ? "Cerrado" : "Abierto"}</span>
+                    </div>
                   </div>
-                  {d.closed ? (
-                    <span className="text-slate-600 text-sm italic flex-1">Cerrado</span>
-                  ) : (
-                    <div className="flex items-center gap-2 flex-1">
-                      <input type="time" value={d.open} onChange={e => setDayField(day, "open", e.target.value)}
-                        className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all" />
-                      <span className="text-slate-600 text-sm">—</span>
-                      <input type="time" value={d.close} onChange={e => setDayField(day, "close", e.target.value)}
-                        className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all" />
+
+                  {!d.closed && (
+                    <div className="space-y-2 pl-1">
+                      {/* Turno 1 */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-slate-500 w-16 shrink-0">Turno 1</span>
+                        <input
+                          type="time"
+                          value={d.t1?.open ?? ""}
+                          onChange={e => setDayField(day, "t1", "open", e.target.value)}
+                          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all"
+                        />
+                        <span className="text-slate-600 text-sm">—</span>
+                        <input
+                          type="time"
+                          value={d.t1?.close ?? ""}
+                          onChange={e => setDayField(day, "t1", "close", e.target.value)}
+                          className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all"
+                        />
+                      </div>
+
+                      {/* Turno 2 */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-slate-500 w-16 shrink-0">Turno 2</span>
+                        {d.t2?.active ? (
+                          <>
+                            <input
+                              type="time"
+                              value={d.t2?.open ?? ""}
+                              onChange={e => setDayField(day, "t2", "open", e.target.value)}
+                              className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all"
+                            />
+                            <span className="text-slate-600 text-sm">—</span>
+                            <input
+                              type="time"
+                              value={d.t2?.close ?? ""}
+                              onChange={e => setDayField(day, "t2", "close", e.target.value)}
+                              className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 text-sm font-mono focus:outline-none focus:border-amber-500/50 transition-all"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setDayField(day, "t2", "active", false)}
+                              className="text-xs text-slate-600 hover:text-rose-400 transition-colors ml-1"
+                            >
+                              Quitar
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setDayField(day, "t2", "active", true)}
+                            className="text-xs px-3 py-1 rounded-full border border-dashed border-slate-700 text-slate-500 hover:border-amber-500/50 hover:text-amber-400 transition-all"
+                            style={{ borderColor: `${accent}44` }}
+                          >
+                            + Agregar segundo turno
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Toggle checked={!d.closed} onChange={v => setDayField(day, "closed", !v)} color={accent} />
-                    <span className="text-slate-600 text-xs">{d.closed ? "Cerrado" : "Abierto"}</span>
-                  </div>
                 </div>
               );
             })}
           </div>
         </SectionCard>
 
-        {/* ── 5. DOMAIN & SECURITY (Cloudflare) ── */}
+        {/* ── 6. DOMAIN & SECURITY (Cloudflare) ── */}
         <SectionCard
           title="Dominio y Seguridad"
           subtitle="Estado técnico de tu sitio web · Cloudflare"
@@ -488,7 +646,7 @@ export default function SettingsPanel({ session }) {
           </div>
         </SectionCard>
 
-        {/* ── 6. PLAN ── */}
+        {/* ── 7. PLAN ── */}
         <SectionCard title="Plan Activo" subtitle="Tu suscripción con JL Studios" icon={Server} accent="#4ade80">
           <div className="flex items-center justify-between">
             <div>
