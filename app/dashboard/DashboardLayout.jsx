@@ -10,7 +10,7 @@
 
 import { useState, createContext, useContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Home, ClipboardList, Images, Settings, ChevronLeft, LogOut, Globe, Zap, Shield, Store } from "lucide-react";
+import { Home, ClipboardList, Images, Settings, ChevronLeft, LogOut, Globe, Zap, Shield, Store, Menu, X } from "lucide-react";
 import { getClientByUsername, getSchedules } from "@/src/lib/supabase";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -177,12 +177,22 @@ const NAV = [
   { id: "negocio", label: "Mi Negocio",        icon: Store },
 ];
 
-function Sidebar({ collapsed, setCollapsed, activePage, setActivePage, session }) {
+function Sidebar({ collapsed, setCollapsed, activePage, setActivePage, session, mobileOpen, onMobileClose }) {
   const accent = session?.accentColor ?? "#f59e0b";
 
+  const handleNavClick = (id) => {
+    setActivePage(id);
+    if (onMobileClose) onMobileClose();
+  };
+
   return (
-    <aside className="relative flex flex-col shrink-0 bg-slate-900 border-r border-slate-800/60 transition-all duration-300 ease-in-out overflow-hidden"
-      style={{ width: collapsed ? 72 : 260 }}>
+    <>
+    {/* Mobile backdrop */}
+    {mobileOpen && (
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden" onClick={onMobileClose} />
+    )}
+    <aside className={`fixed md:relative top-0 left-0 h-full z-50 flex flex-col shrink-0 bg-slate-900 border-r border-slate-800/60 transition-all duration-300 ease-in-out overflow-hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+      style={{ width: collapsed && !mobileOpen ? 72 : 260 }}>
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-amber-500 via-orange-400 to-amber-500 opacity-90" />
 
       <div className="flex items-center gap-3 px-5 py-6 border-b border-slate-800/60">
@@ -195,10 +205,10 @@ function Sidebar({ collapsed, setCollapsed, activePage, setActivePage, session }
             <p className="text-slate-500 text-xs mt-1 font-medium">Panel de Cliente</p>
           </div>
         )}
-        <button onClick={() => setCollapsed(!collapsed)}
+        <button onClick={() => { if (mobileOpen) { onMobileClose(); } else { setCollapsed(!collapsed); } }}
           className="shrink-0 w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-all duration-200 text-slate-400 hover:text-slate-200">
-          <ChevronLeft className="w-3.5 h-3.5 transition-transform duration-300"
-            style={{ transform: collapsed ? "rotate(180deg)" : "rotate(0deg)" }} />
+          {mobileOpen ? <X className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5 transition-transform duration-300"
+            style={{ transform: collapsed ? "rotate(180deg)" : "rotate(0deg)" }} />}
         </button>
       </div>
 
@@ -234,7 +244,7 @@ function Sidebar({ collapsed, setCollapsed, activePage, setActivePage, session }
         {NAV.map(({ id, label, icon: Icon }) => {
           const active = activePage === id;
           return (
-            <button key={id} onClick={() => setActivePage(id)}
+            <button key={id} onClick={() => handleNavClick(id)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group ${active ? "" : "text-slate-500 hover:bg-slate-800 hover:text-slate-200"}`}
               style={{
                 background: active ? `${accent}14` : "transparent",
@@ -288,6 +298,7 @@ function Sidebar({ collapsed, setCollapsed, activePage, setActivePage, session }
         </div>
       </div>
     </aside>
+    </>
   );
 }
 
@@ -304,6 +315,7 @@ export default function DashboardLayout() {
   const router = useRouter();
   const [collapsed,  setCollapsed]  = useState(false);
   const [activePage, setActivePage] = useState("inicio");
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userSession, setUserSession] = useState(null);
@@ -442,8 +454,17 @@ export default function DashboardLayout() {
           activePage={activePage}
           setActivePage={setActivePage}
           session={userSession}
+          mobileOpen={mobileOpen}
+          onMobileClose={() => setMobileOpen(false)}
         />
-        <main className="flex-1 overflow-y-auto bg-slate-950">
+        <main className="flex-1 overflow-y-auto bg-slate-950 relative">
+          {/* Mobile hamburger button */}
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="fixed top-4 left-4 z-30 md:hidden w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-slate-300 shadow-lg"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
           {pages[activePage]}
         </main>
       </div>

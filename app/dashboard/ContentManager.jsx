@@ -346,6 +346,52 @@ function ItemModal({ item, schema, accent, categoryOptions, onSave, onClose }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// ITEM CARD (mobile view)
+// ---------------------------------------------------------------------------
+function ItemCard({ item, schema, accent, onEdit, onDelete, onToggleActive }) {
+  const priceVal = item[schema.priceField];
+  const categoryVal = item[schema.categoryField];
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+      <div className="flex items-start gap-3">
+        {item.imageUrl ? (
+          <img src={item.imageUrl} alt={item.nombre} className="w-12 h-12 rounded-lg object-cover shrink-0 border border-slate-700"
+            onError={e => { e.currentTarget.style.display = "none"; e.currentTarget.nextSibling.style.display = "flex"; }} />
+        ) : null}
+        <div className="w-12 h-12 rounded-lg bg-slate-800 items-center justify-center text-xl shrink-0"
+          style={{ display: item.imageUrl ? "none" : "flex" }}>{item.emoji}</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-slate-200 font-semibold text-sm truncate">{item.nombre}</p>
+            <span className="font-mono font-bold text-sm shrink-0" style={{ color: accent }}>${Number(priceVal || 0).toLocaleString("es-AR")}</span>
+          </div>
+          {item.desc && <p className="text-slate-600 text-xs mt-0.5 truncate">{item.desc}</p>}
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">{categoryVal}</span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.activo ? "bg-emerald-500/15 text-emerald-400" : "bg-slate-800 text-slate-600"}`}>
+              {item.activo ? "Activo" : "Inactivo"}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-800">
+        <button onClick={() => onToggleActive(item.id)} className="relative flex items-center rounded-full transition-all duration-300"
+          style={{ width: 44, height: 24, padding: 3, background: item.activo ? "rgba(74,222,128,.2)" : "#1e293b", border: `1px solid ${item.activo ? "#4ade8066" : "#334155"}` }}>
+          <div className="absolute rounded-full transition-all duration-300"
+            style={{ width: 18, height: 18, background: item.activo ? "#4ade80" : "#475569", transform: item.activo ? "translateX(20px)" : "translateX(0)", boxShadow: item.activo ? "0 0 8px rgba(74,222,128,.5)" : "none" }} />
+        </button>
+        <div className="flex gap-2">
+          <button onClick={() => onEdit(item)} className="w-9 h-9 rounded-lg flex items-center justify-center transition-all"
+            style={{ background: `${accent}18`, color: accent }}><Edit3 className="w-4 h-4" /></button>
+          <button onClick={() => onDelete(item.id)} className="w-9 h-9 rounded-lg bg-slate-800 hover:bg-rose-500/15 text-slate-500 hover:text-rose-400 flex items-center justify-center transition-all">
+            <Trash2 className="w-4 h-4" /></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ITEM ROW (table row)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -655,21 +701,21 @@ export default function ContentManager({ session }) {
   }
 
   return (
-    <div className="min-h-full bg-slate-950 p-6 lg:p-8 pb-28">
+    <div className="min-h-full bg-slate-950 p-4 pt-16 md:pt-6 md:p-6 lg:p-8 pb-28">
       {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-4 mb-8">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+      <div className="flex items-start justify-between flex-wrap gap-3 mb-6 md:mb-8">
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center"
             style={{ background: `${accent}12`, border: `1px solid ${accent}25` }}>
-            <SchemaIcon className="w-6 h-6" style={{ color: accent }} />
+            <SchemaIcon className="w-5 h-5 md:w-6 md:h-6" style={{ color: accent }} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-100 tracking-tight">{schema.itemsLabel}</h1>
-            <p className="text-slate-500 text-sm mt-0.5">{session.businessName} · {schema.label}</p>
+            <h1 className="text-xl md:text-2xl font-bold text-slate-100 tracking-tight">{schema.itemsLabel}</h1>
+            <p className="text-slate-500 text-xs md:text-sm mt-0.5">{session.businessName} · {schema.label}</p>
           </div>
         </div>
         <button onClick={openNew}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
+          className="flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
           style={{ background: accent, color: "#0f172a", boxShadow: `0 4px 16px ${accent}44` }}
           onMouseEnter={e => e.currentTarget.style.opacity = ".85"}
           onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
@@ -693,10 +739,10 @@ export default function ContentManager({ session }) {
       </div>
 
       {/* Category filter */}
-      <div className="flex gap-2 mb-5 flex-wrap">
+      <div className="flex gap-2 mb-5 flex-wrap overflow-x-auto pb-1">
         {cats.map(cat => (
           <button key={cat} onClick={() => setFilterCat(cat)}
-            className="px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200"
+            className="px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 shrink-0"
             style={filterCat === cat
               ? { background: accent, color: "#0f172a" }
               : { background: "#1e293b", color: "#64748b" }}>
@@ -708,8 +754,22 @@ export default function ContentManager({ session }) {
         ))}
       </div>
 
-      {/* Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+      {/* Mobile card view */}
+      <div className="md:hidden space-y-3">
+        {filtered.length === 0 ? (
+          <div className="text-center py-12 text-slate-600 text-sm">
+            No hay {schema.itemsLabel.toLowerCase()} en esta categoría. <button onClick={openNew} className="underline" style={{ color: accent }}>Agregar uno</button>
+          </div>
+        ) : (
+          filtered.map(item => (
+            <ItemCard key={item.id} item={item} schema={schema} accent={accent}
+              onEdit={openEdit} onDelete={handleDelete} onToggleActive={handleToggleActive} />
+          ))
+        )}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden md:block bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-slate-800">

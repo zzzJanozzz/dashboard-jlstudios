@@ -251,7 +251,7 @@ export default function DashboardHome({ session }) {
   // ── loading state ──
   if (loading) {
     return (
-      <div className="min-h-full bg-slate-950 p-6 lg:p-8 flex items-center justify-center">
+      <div className="min-h-full bg-slate-950 p-4 pt-16 md:pt-6 md:p-6 lg:p-8 flex items-center justify-center">
         <RefreshCw className="w-6 h-6 text-slate-600 animate-spin" />
       </div>
     );
@@ -261,15 +261,15 @@ export default function DashboardHome({ session }) {
   const pubAgo = publishAgo(lastPublish);
 
   return (
-    <div className="min-h-full bg-slate-950 p-6 lg:p-8">
+    <div className="min-h-full bg-slate-950 p-4 pt-16 md:pt-6 md:p-6 lg:p-8">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6 md:mb-8">
         <div className="flex items-center gap-3 mb-1">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400" />
           <span className="text-emerald-400 text-xs font-semibold">Tu sitio web está en vivo</span>
         </div>
-        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">{getGreeting()} 👋</h1>
-        <p className="text-slate-500 text-sm mt-1">Resumen de actividad de <span className="text-slate-400 font-medium">{businessName}</span></p>
+        <h1 className="text-xl md:text-2xl font-bold text-slate-100 tracking-tight">{getGreeting()} 👋</h1>
+        <p className="text-slate-500 text-xs md:text-sm mt-1">Resumen de actividad de <span className="text-slate-400 font-medium">{businessName}</span></p>
       </div>
 
       {/* Setup banner (when no analytics yet) */}

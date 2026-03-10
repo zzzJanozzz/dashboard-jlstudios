@@ -459,7 +459,7 @@ export default function MediaGallery({ session }) {
   }
 
   return (
-    <div className="min-h-full bg-slate-950 p-6 lg:p-8 pb-28">
+    <div className="min-h-full bg-slate-950 p-4 pt-16 md:pt-6 md:p-6 lg:p-8 pb-28">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Fotos del Negocio</h1>
